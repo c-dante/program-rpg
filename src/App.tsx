@@ -15,7 +15,7 @@ const Header = () => (
 
 function App() {
 	return (
-		<div className="root">
+		<div className="flex-column padded">
 			<Header />
 			<Game />
 		</div>

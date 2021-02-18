@@ -1,5 +1,16 @@
-.root {
+.flex-row {
+  display: flex;
+}
+
+.flex-column {
   display: flex;
   flex-direction: column;
-  margin: 1em;
+}
+
+.padded > div {
+  padding: 1em;
+}
+
+.flex-expand {
+  flex: 1;
 }
