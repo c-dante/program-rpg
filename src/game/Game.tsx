@@ -4,6 +4,7 @@ import { BoxGeometry, Mesh, MeshBasicMaterial, PerspectiveCamera, Scene, WebGLRe
 import type { Camera, Renderer } from 'three';
 
 import { Actor, makeActor} from './actor';
+import CodeWindow from './CodeWindow';
 
 export interface Props {}
 
@@ -79,7 +80,10 @@ class Game extends React.Component<Props> {
 
 	render() {
 		return (
-			<div ref={this.containerRef} />
+			<div className="flex-row padded">
+				<div ref={this.containerRef} />
+				<CodeWindow />
+			</div>
 		);
 	}
 }
