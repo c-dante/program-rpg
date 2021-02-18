@@ -1,14 +1,8 @@
 import React, { createRef, RefObject, useState } from 'react';
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/mode/javascript/javascript';
-import 'codemirror/addon/dialog/dialog';
-import 'codemirror/addon/hint/show-hint';
 import 'codemirror/addon/edit/matchbrackets';
 import CodeMirror from 'codemirror';
-
-const config = {
-	lineNumbers: true,
-};
 
 export interface Props {
 	source?: String;
