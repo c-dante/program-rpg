@@ -1,26 +1,25 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
+import Game from './game/Game';
+
+const Header = () => (
+	<div>
+		<h4>Program RPG</h4>
+		<p>
+			A little playground of an idea.
+			Spells and weapons are backed by scripts.
+			You can modify these scripts at the cost of MP per compute.
+		</p>
+	</div>
+);
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+	return (
+		<div className="root">
+			<Header />
+			<Game />
+		</div>
+	);
 }
 
 export default App;
