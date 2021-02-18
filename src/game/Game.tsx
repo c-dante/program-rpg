@@ -3,6 +3,8 @@ import type { RefObject } from 'react';
 import { BoxGeometry, Mesh, MeshBasicMaterial, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import type { Camera, Renderer } from 'three';
 
+import { Actor, makeActor} from './actor';
+
 export interface Props {}
 
 class Game extends React.Component<Props> {
@@ -10,7 +12,7 @@ class Game extends React.Component<Props> {
 	scene: Scene;
 	camera: Camera;
 	renderer: Renderer;
-	cube: Mesh;
+	actors: Actor[];
 
 	_paused: boolean = true;
 	_frameId: number = 0;
@@ -26,12 +28,18 @@ class Game extends React.Component<Props> {
 		this.renderer = new WebGLRenderer();
 		this.renderer.setSize(width, height);
 
-		// ---- Bleh ----- //
-		this.cube = new Mesh(
+		this.actors = [];
+
+		// ---- Less bleh ----- //
+		const cube = makeActor(new Mesh(
 			new BoxGeometry(),
 			new MeshBasicMaterial({ color: 0x690069 })
-		);
-		this.scene.add(this.cube);
+		), (self) => {
+			self.rotation.x += 0.01;
+			self.rotation.y += 0.01;
+		});
+		this.actors.push(cube);
+		this.scene.add(cube.mesh);
 		this.camera.position.z = 2;
 	}
 
@@ -63,8 +71,7 @@ class Game extends React.Component<Props> {
 		if (!this._paused) {
 			this._frameId = window.requestAnimationFrame(() => this.tick());
 
-			this.cube.rotation.x += 0.01;
-			this.cube.rotation.y += 0.01;
+			this.actors.forEach(actor => actor.tick(actor.mesh));
 
 			this.renderer.render(this.scene, this.camera);
 		}
