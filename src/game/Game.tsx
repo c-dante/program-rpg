@@ -1,10 +1,28 @@
 import React, { createRef } from 'react';
 import type { RefObject } from 'react';
-import { BoxGeometry, Mesh, MeshBasicMaterial, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import type { Camera, Renderer } from 'three';
 
-import { Actor, makeActor} from './actor';
+import { Actor, withContext} from './actor';
 import CodeWindow from './CodeWindow';
+
+
+const setUpScene = (ctx) => {
+	const api = withContext(ctx);
+	console.debug(api);
+
+	const cube = api.makeEntity({
+		tick(self) {
+			self.rotation.x += 0.01;
+			self.rotation.y += 0.01;
+		}
+	});
+	console.debug(cube);
+
+	ctx.camera.position.z = 2;
+
+	return api;
+}
 
 export interface Props {}
 
@@ -32,16 +50,11 @@ class Game extends React.Component<Props> {
 		this.actors = [];
 
 		// ---- Less bleh ----- //
-		const cube = makeActor(new Mesh(
-			new BoxGeometry(),
-			new MeshBasicMaterial({ color: 0x690069 })
-		), (self) => {
-			self.rotation.x += 0.01;
-			self.rotation.y += 0.01;
+		setUpScene({
+			scene: this.scene,
+			camera: this.camera,
+			actors: this.actors,
 		});
-		this.actors.push(cube);
-		this.scene.add(cube.mesh);
-		this.camera.position.z = 2;
 	}
 
 	componentDidMount() {
