@@ -1,29 +1,54 @@
 import fp from 'lodash/fp';
 import { BoxGeometry, Mesh, MeshBasicMaterial } from 'three';
-import type { Scene, Camera } from 'three';
+import type { Renderer, Scene, Camera } from 'three';
 
-import { Colors } from './style';
+import { Colors } from './config';
 
-export type Tick = (self: Mesh) => void;
+export type Tick = (ctx: Context, self: Mesh) => void;
 export interface Tickable {
 	tick: Tick;
 }
+export interface Named {
+	name: string;
+}
 
-export interface Actor extends Tickable {
+export interface Actor extends Tickable, Named {
 	mesh: Mesh;
 };
+
+export type Blackboard = {} & any;
 
 export type Context = {
 	actors: Actor[],
 	camera: Camera,
 	scene: Scene,
+	renderer: Renderer,
+	bb: Blackboard,
 };
-
-export const makeActor = (mesh: Mesh, tick: Tick = () => {}): Actor => ({
-	tick,
-	mesh,
+export const makeContext = ({
+	renderer,
+	camera,
+	scene,
+	actors = [],
+	bb = {},
+}: Partial<Context> & Pick<Context, 'camera' | 'scene' | 'renderer'>): Context => ({
+	renderer,
+	actors,
+	camera,
+	scene,
+	bb,
 });
 
+export type MakeActorProps = Actor;
+export const makeActor = ({
+	mesh,
+	name = `actor-${Math.random().toString(16).slice(2)}`,
+	tick = fp.noop,
+}: Partial<MakeActorProps> & Pick<MakeActorProps, 'mesh'>): Actor => ({
+	tick,
+	mesh,
+	name,
+});
 
 // ----
 
@@ -51,7 +76,7 @@ export const makeEntity = (
 	mesh.position.y = y;
 	scene.add(mesh);
 
-	const entity = makeActor(mesh, tick);
+	const entity = makeActor({ mesh, tick });
 	actors.push(entity);
 
 	return entity;

@@ -1,7 +1,3 @@
-Start with some entities { x, y } is enough
-
-Get them their own loops
-
 Write their loops
 
 ---
