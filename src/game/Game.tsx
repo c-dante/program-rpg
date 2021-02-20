@@ -3,6 +3,7 @@ import type { RefObject } from 'react';
 import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import type { Camera, Renderer } from 'three';
 
+import { Colors } from './style';
 import { Actor, withContext} from './actor';
 import CodeWindow from './CodeWindow';
 
@@ -12,14 +13,26 @@ const setUpScene = (ctx) => {
 	console.debug(api);
 
 	const cube = api.makeEntity({
+		x: 1,
+		y: 1,
 		tick(self) {
 			self.rotation.x += 0.01;
 			self.rotation.y += 0.01;
 		}
 	});
-	console.debug(cube);
 
-	ctx.camera.position.z = 2;
+	const other = api.makeEntity({
+		x: -1,
+		y: -1,
+		color: Colors.Red,
+		tick(self) {
+			self.rotation.x += 0.01;
+			self.rotation.y += 0.01;
+		}
+	});
+	console.debug({ cube, other });
+
+	ctx.camera.position.z = 5;
 
 	return api;
 }

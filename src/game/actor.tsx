@@ -2,6 +2,8 @@ import fp from 'lodash/fp';
 import { BoxGeometry, Mesh, MeshBasicMaterial } from 'three';
 import type { Scene, Camera } from 'three';
 
+import { Colors } from './style';
+
 export type Tick = (self: Mesh) => void;
 export interface Tickable {
 	tick: Tick;
@@ -30,18 +32,20 @@ export type MakeEntityProps = {
 	x: number,
 	y: number,
 	tick: Tick,
+	color: number,
 };
 export const makeEntity = (
 	{ actors, scene }: Context,
 	{
 		x = 0,
 		y = 0,
-		tick = fp.noop
+		tick = fp.noop,
+		color = Colors.Purple,
 	}: Partial<MakeEntityProps> = {}
 ) => {
 	const mesh = new Mesh(
 		new BoxGeometry(),
-		new MeshBasicMaterial({ color: 0x690069 })
+		new MeshBasicMaterial({ color })
 	);
 	mesh.position.x = x;
 	mesh.position.y = y;
