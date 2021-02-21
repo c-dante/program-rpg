@@ -13,9 +13,10 @@ const Header = () => (
 	</div>
 );
 
+
 function App() {
 	return (
-		<div className="flex-column padded">
+		<div className="flex-column padded fill">
 			<Header />
 			<Game />
 		</div>

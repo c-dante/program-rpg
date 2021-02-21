@@ -2,7 +2,7 @@ import fp from 'lodash/fp';
 import { BoxGeometry, Mesh, MeshBasicMaterial } from 'three';
 import type { Renderer, Scene, Camera } from 'three';
 
-import { Colors } from './config';
+import { Colors, SCALE } from './config';
 
 export type Tick = (ctx: Context, self: Mesh) => void;
 export interface Tickable {
@@ -74,6 +74,7 @@ export const makeEntity = (
 	);
 	mesh.position.x = x;
 	mesh.position.y = y;
+	mesh.scale.multiplyScalar(SCALE);
 	scene.add(mesh);
 
 	const entity = makeActor({ mesh, tick });
@@ -83,8 +84,10 @@ export const makeEntity = (
 };
 
 export interface ContextApi {
+	ctx: Context;
 	makeEntity: (props: Partial<MakeEntityProps>) => Actor;
 }
 export const withContext = (ctx: Context): ContextApi => ({
+	ctx,
 	makeEntity: fp.partial(makeEntity, [ctx]),
 });

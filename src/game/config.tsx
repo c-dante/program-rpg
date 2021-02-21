@@ -8,4 +8,8 @@ export const Controls = {
 	Down: 'KeyS',
 	Left: 'KeyA',
 	Right: 'KeyD',
-}
+	Spawn: 'Space',
+};
+
+export const SCALE = 1;
+export const PLANE_Z = 30;
