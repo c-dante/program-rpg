@@ -1,17 +1,35 @@
 import React, { createRef } from 'react';
 import type { RefObject } from 'react';
-import { PerspectiveCamera, Scene, Vector3, WebGLRenderer } from 'three';
+import { Mesh, PerspectiveCamera, PlaneGeometry, Scene, ShaderMaterial, Vector3, WebGLRenderer } from 'three';
 import fp from 'lodash/fp';
 
-import { Colors, Controls, PLANE_Z, SCALE } from './config';
-import { ContextApi, Context, withContext, makeContext } from './actor';
+import { Colors, Controls, PLANE_Z, SCALE, Tag } from './config';
+import { ContextApi, withContext, makeContext } from './actor';
 import CodeWindow from './CodeWindow';
+
+import vertShader from './shaders/test-vert';
+import fragShader from './shaders/test-frag';
+
+const makeGround = (api: ContextApi) => {
+	const { scene } = api.ctx;
+	const mesh = new Mesh(
+		new PlaneGeometry(10000, 10000),
+		new ShaderMaterial({
+			uniforms: {},
+			vertexShader: vertShader,
+			fragmentShader: fragShader,
+		}),
+	);
+	mesh.position.z = -2;
+	scene.add(mesh);
+};
 
 const makeOther = (api: ContextApi) => {
 	api.makeEntity({
 		x: -1,
 		y: -1,
 		color: Colors.Red,
+		tags: new Set([Tag.Other]),
 		tick(ctx, self) {
 			self.rotation.x += 0.01;
 			self.rotation.y += 0.01;
@@ -40,7 +58,30 @@ const otherSpawner = () => {
 	}
 }
 
+const cameraControls = () => (api: ContextApi) => {
+	const keys = api.ctx.bb.input.keys;
+
+	// Move around
+	const v = new Vector3();
+	if (keys[Controls.CameraUp]) {
+		v.y += 0.1 * SCALE;
+	}
+	if (keys[Controls.CameraDown]) {
+		v.y -= 0.1 * SCALE;
+	}
+	if (keys[Controls.CameraLeft]) {
+		v.x -= 0.1 * SCALE;
+	}
+	if (keys[Controls.CameraRight]) {
+		v.x += 0.1 * SCALE;
+	}
+	api.ctx.camera.position.add(
+		v.normalize().multiplyScalar(keys[Controls.CameraBoost] ? 5 : 0.5)
+	);
+}
+
 const setUpScene = (api: ContextApi) => {
+	// Player stuff
 	const cube = api.makeEntity({
 		x: 1,
 		y: 1,
@@ -67,10 +108,14 @@ const setUpScene = (api: ContextApi) => {
 		}
 	});
 
+	// Toss another in tere
 	makeOther(api);
 
-	// Blackboard because why not
+	// Blackboard for logic comms
 	api.ctx.bb.cube = cube;
+
+	// Background
+	makeGround(api);
 
 	return api;
 }
@@ -110,6 +155,7 @@ class Game extends React.Component<Props, State> {
 		};
 		this.api = withContext(ctx);
 		this.tickables.push(otherSpawner());
+		this.tickables.push(cameraControls());
 
 		this.state = {
 			api: this.api,
@@ -174,7 +220,23 @@ class Game extends React.Component<Props, State> {
 		return (
 			<div className="flex-expand">
 				<div className="fill flex-row padded">
-					<div ref={this.containerRef} />
+					<div className="flex-column flex-expand">
+						<div ref={this.containerRef} />
+						<div className="flex-row">
+							<button onClick={() => {
+								this.api.ctx.camera.position.setX(
+									this.api.ctx.bb.cube.mesh.position.x
+								);
+								this.api.ctx.camera.position.setY(
+									this.api.ctx.bb.cube.mesh.position.y
+								);
+							}}>Center Player</button>
+
+							<button onClick={() => {
+								this.api.removeByTags([Tag.Other]);
+							}}>Clear Other</button>
+						</div>
+					</div>
 					<CodeWindow keys={this.api.ctx.bb.input.keys} />
 				</div>
 			</div>

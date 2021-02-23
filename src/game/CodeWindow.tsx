@@ -4,6 +4,8 @@ import 'codemirror/mode/javascript/javascript';
 import 'codemirror/addon/edit/matchbrackets';
 import CodeMirror from 'codemirror';
 
+import { Controls } from './config';
+
 export interface Props {
 	source?: String;
 }
@@ -55,13 +57,15 @@ const CodeWindow = ({ keys = {} }) => {
 			<table>
 				<colgroup>
 					<col width="50%" />
-					<col width="50%" />
+					<col width="25%" />
+					<col width="25%" />
 				</colgroup>
 				<tbody>
-					{[...Object.keys(keys)].map((key) => (
+					{Object.keys(Controls).map((key) => (
 						<tr key={key}>
 							<td>{key}</td>
-							<td>{keys[key] ? 'down' : 'up'}</td>
+							<td>{Controls[key]}</td>
+							<td>{keys[Controls[key]] ? 'down' : 'up'}</td>
 						</tr>
 					))}
 				</tbody>

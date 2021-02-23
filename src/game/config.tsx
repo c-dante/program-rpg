@@ -4,11 +4,25 @@ export const Colors = {
 };
 
 export const Controls = {
+	// Player Movement
 	Up: 'KeyW',
 	Down: 'KeyS',
 	Left: 'KeyA',
 	Right: 'KeyD',
 	Spawn: 'Space',
+
+	// Camera
+	CameraUp: 'ArrowUp',
+	CameraDown: 'ArrowDown',
+	CameraLeft: 'ArrowLeft',
+	CameraRight: 'ArrowRight',
+
+	// Boost
+	CameraBoost: 'ShiftLeft',
+};
+
+export const Tag = {
+	Other: 'Other',
 };
 
 export const SCALE = 1;
