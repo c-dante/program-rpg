@@ -83,7 +83,6 @@ export type MakeEntityProps = {
 	y: number,
 	tick: Tick,
 	color: number,
-	tags: Set<String>,
 } & Omit<Actor, 'mesh'>;
 export const makeEntity = (
 	{ actors, scene }: Context,
@@ -120,6 +119,16 @@ export const removeByTags = (
 	);
 	ctx.actors = keep;
 	ctx.scene.remove(...remove.map(x => x.mesh));
+
+	// @todo: determine shader & geometry lifetimes
+	remove.forEach(({ mesh }) => {
+		mesh.geometry.dispose();
+		if (fp.isArray(mesh.material)) {
+			mesh.material.forEach(x => x.dispose());
+		} else {
+			mesh.material.dispose();
+		}
+	})
 };
 
 export interface ContextApi {

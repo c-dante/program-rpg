@@ -265,17 +265,19 @@ class Game extends React.Component<Props, State> {
 					<div className="flex-column flex-expand">
 						<div ref={this.containerRef} />
 						<div className="flex-row">
-							<button onClick={() => {
+							<button onClick={(evt) => {
 								this.api.ctx.camera.position.setX(
 									this.api.ctx.bb.cube.mesh.position.x
 								);
 								this.api.ctx.camera.position.setY(
 									this.api.ctx.bb.cube.mesh.position.y
 								);
+								evt.currentTarget.blur();
 							}}>Center Player</button>
 
-							<button onClick={() => {
+							<button onClick={(evt) => {
 								this.api.removeByTags([Tag.Other]);
+								evt.currentTarget.blur();
 							}}>Clear Other</button>
 						</div>
 					</div>
