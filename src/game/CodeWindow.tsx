@@ -3,7 +3,7 @@ import 'codemirror/lib/codemirror.css';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/addon/edit/matchbrackets';
 import CodeMirror from 'codemirror';
-import type { Intersection, Object3D } from 'three';
+import type { Intersection } from 'three';
 
 import { Controls } from './config';
 import { GameInput } from './actor';
