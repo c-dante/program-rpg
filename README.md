@@ -1,4 +1,4 @@
-# program-rpg
+# [program-rpg](https://c-dante.github.io/program-rpg/)
 Playing with an idea of programming as a game mechanic.
 
 ## Develop
