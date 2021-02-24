@@ -65,12 +65,15 @@ export const makeActor = ({
 	name = `actor-${Math.random().toString(16).slice(2)}`,
 	tick = fp.noop,
 	tags = new Set(),
-}: Partial<MakeActorProps> & Pick<MakeActorProps, 'mesh'>): Actor => ({
-	tick,
-	mesh,
-	name,
-	tags,
-});
+}: Partial<MakeActorProps> & Pick<MakeActorProps, 'mesh'>): Actor => {
+	mesh.name = name;
+	return {
+		tick,
+		mesh,
+		name,
+		tags,
+	};
+}
 
 // ----
 
@@ -81,7 +84,7 @@ export type MakeEntityProps = {
 	tick: Tick,
 	color: number,
 	tags: Set<String>,
-};
+} & Omit<Actor, 'mesh'>;
 export const makeEntity = (
 	{ actors, scene }: Context,
 	{
@@ -89,7 +92,7 @@ export const makeEntity = (
 		y = 0,
 		tick = fp.noop,
 		color = Colors.Purple,
-		tags = new Set(),
+		...actorProps
 	}: Partial<MakeEntityProps> = {}
 ): Actor => {
 	const mesh = new Mesh(
@@ -101,7 +104,7 @@ export const makeEntity = (
 	mesh.scale.multiplyScalar(SCALE);
 	scene.add(mesh);
 
-	const entity = makeActor({ mesh, tick, tags });
+	const entity = makeActor({ mesh, tick, ...actorProps });
 	actors.push(entity);
 
 	return entity;

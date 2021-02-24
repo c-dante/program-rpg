@@ -25,6 +25,7 @@ const makeGround = (api: ContextApi) => {
 		}),
 	);
 	mesh.position.z = -2;
+	mesh.name = 'ground';
 	scene.add(mesh);
 };
 
@@ -34,6 +35,7 @@ const makeOther = (api: ContextApi) => {
 		y: -1,
 		color: Colors.Red,
 		tags: new Set([Tag.Other]),
+		name: 'some-enemy',
 		tick(ctx, self) {
 			self.rotation.x += 0.01;
 			self.rotation.y += 0.01;
@@ -89,6 +91,7 @@ const setUpScene = (api: ContextApi) => {
 	const cube = api.makeEntity({
 		x: 1,
 		y: 1,
+		name: 'cube',
 		tick(ctx, self) {
 			self.rotation.x += 0.01;
 			self.rotation.y += 0.01;
