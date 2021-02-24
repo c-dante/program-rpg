@@ -1,5 +1,5 @@
 import fp from 'lodash/fp';
-import { BoxGeometry, Mesh, MeshBasicMaterial } from 'three';
+import { BoxGeometry, Mesh, MeshBasicMaterial, Raycaster } from 'three';
 import type { Renderer, Scene, Camera } from 'three';
 
 import { Colors, SCALE } from './config';
@@ -19,27 +19,44 @@ export interface Actor extends Tickable, Named, Tagged {
 	mesh: Mesh;
 };
 
-export type Blackboard = {} & any;
+export type GameInput = {
+	keys: Record<string, boolean>,
+	mouse: {
+		down: boolean,
+		x: number,
+		y: number,
+	}
+};
+
+export type Blackboard = {
+	input: GameInput,
+	[x: string]: any,
+};
 
 export type Context = {
-	actors: Actor[],
+	actors: Actor[], // mut
 	camera: Camera,
 	scene: Scene,
 	renderer: Renderer,
 	bb: Blackboard,
+	targets: any[], // mut
 };
 export const makeContext = ({
 	renderer,
 	camera,
 	scene,
 	actors = [],
-	bb = {},
+	bb = {
+		input: { keys: {}, mouse: { down: false, x: 0, y: 0 }}
+	},
+	targets = [],
 }: Partial<Context> & Pick<Context, 'camera' | 'scene' | 'renderer'>): Context => ({
 	renderer,
 	actors,
 	camera,
 	scene,
 	bb,
+	targets,
 });
 
 export type MakeActorProps = Actor;
@@ -48,12 +65,15 @@ export const makeActor = ({
 	name = `actor-${Math.random().toString(16).slice(2)}`,
 	tick = fp.noop,
 	tags = new Set(),
-}: Partial<MakeActorProps> & Pick<MakeActorProps, 'mesh'>): Actor => ({
-	tick,
-	mesh,
-	name,
-	tags,
-});
+}: Partial<MakeActorProps> & Pick<MakeActorProps, 'mesh'>): Actor => {
+	mesh.name = name;
+	return {
+		tick,
+		mesh,
+		name,
+		tags,
+	};
+}
 
 // ----
 
@@ -63,8 +83,7 @@ export type MakeEntityProps = {
 	y: number,
 	tick: Tick,
 	color: number,
-	tags: Set<String>,
-};
+} & Omit<Actor, 'mesh'>;
 export const makeEntity = (
 	{ actors, scene }: Context,
 	{
@@ -72,7 +91,7 @@ export const makeEntity = (
 		y = 0,
 		tick = fp.noop,
 		color = Colors.Purple,
-		tags = new Set(),
+		...actorProps
 	}: Partial<MakeEntityProps> = {}
 ): Actor => {
 	const mesh = new Mesh(
@@ -84,7 +103,7 @@ export const makeEntity = (
 	mesh.scale.multiplyScalar(SCALE);
 	scene.add(mesh);
 
-	const entity = makeActor({ mesh, tick, tags });
+	const entity = makeActor({ mesh, tick, ...actorProps });
 	actors.push(entity);
 
 	return entity;
@@ -100,15 +119,27 @@ export const removeByTags = (
 	);
 	ctx.actors = keep;
 	ctx.scene.remove(...remove.map(x => x.mesh));
+
+	// @todo: determine shader & geometry lifetimes
+	remove.forEach(({ mesh }) => {
+		mesh.geometry.dispose();
+		if (fp.isArray(mesh.material)) {
+			mesh.material.forEach(x => x.dispose());
+		} else {
+			mesh.material.dispose();
+		}
+	})
 };
 
 export interface ContextApi {
 	ctx: Context;
+	raycaster: Raycaster;
 	makeEntity: (props: Partial<MakeEntityProps>) => Actor;
 	removeByTags: (tags: string[]) => void;
 }
 export const withContext = (ctx: Context): ContextApi => ({
 	ctx,
+	raycaster: new Raycaster(),
 	makeEntity: fp.partial(makeEntity, [ctx]),
 	removeByTags: fp.partial(removeByTags, [ctx]),
 });

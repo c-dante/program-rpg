@@ -1,6 +1,10 @@
 import React, { createRef } from 'react';
 import type { RefObject } from 'react';
-import { Mesh, PerspectiveCamera, PlaneGeometry, Scene, ShaderMaterial, Vector3, WebGLRenderer } from 'three';
+import {
+	Mesh, ShaderMaterial, PlaneGeometry,
+	Scene, PerspectiveCamera, WebGLRenderer,
+	Vector3,
+} from 'three';
 import fp from 'lodash/fp';
 
 import { Colors, Controls, PLANE_Z, SCALE, Tag } from './config';
@@ -21,6 +25,7 @@ const makeGround = (api: ContextApi) => {
 		}),
 	);
 	mesh.position.z = -2;
+	mesh.name = 'ground';
 	scene.add(mesh);
 };
 
@@ -30,6 +35,7 @@ const makeOther = (api: ContextApi) => {
 		y: -1,
 		color: Colors.Red,
 		tags: new Set([Tag.Other]),
+		name: 'some-enemy',
 		tick(ctx, self) {
 			self.rotation.x += 0.01;
 			self.rotation.y += 0.01;
@@ -85,6 +91,7 @@ const setUpScene = (api: ContextApi) => {
 	const cube = api.makeEntity({
 		x: 1,
 		y: 1,
+		name: 'cube',
 		tick(ctx, self) {
 			self.rotation.x += 0.01;
 			self.rotation.y += 0.01;
@@ -151,7 +158,15 @@ class Game extends React.Component<Props, State> {
 		ctx.renderer.setSize(width, height);
 		ctx.camera.position.z = PLANE_Z;
 		ctx.bb.input = {
-			keys: {},
+			keys: fp.flow(
+				fp.invert,
+				fp.mapValues(fp.constant(false))
+			)(Controls),
+			mouse: {
+				down: false,
+				x: 0,
+				y: 0,
+			}
 		};
 		this.api = withContext(ctx);
 		this.tickables.push(otherSpawner());
@@ -163,19 +178,37 @@ class Game extends React.Component<Props, State> {
 	}
 
 	componentDidMount() {
-		// Window events in the mount/unmount sections
-		const _onKeyUp = (evt) => {
+		// Window events in the mount/unmount sections for live reload and whatnot
+		const _onKeyUp = (evt: KeyboardEvent) => {
 			this.api.ctx.bb.input.keys[evt.code] = false;
 		}
-		const _onKeyDown = (evt) => {
+		const _onKeyDown = (evt: KeyboardEvent) => {
 			this.api.ctx.bb.input.keys[evt.code] = true;
+		}
+		const _onMouseDown = (evt: MouseEvent) => {
+			this.api.ctx.bb.input.mouse.down = true;
+		}
+		const _onMouseUp = (evt: MouseEvent) => {
+			this.api.ctx.bb.input.mouse.down = false;
+		}
+		const _onMouseMove = (evt: MouseEvent) => {
+			// Relative to center of render, +y is up
+			const { x, y, width, height } = this.api.ctx.renderer.domElement.getBoundingClientRect();
+			this.api.ctx.bb.input.mouse.x = ((evt.clientX - width / 2) - x) / width * 2;
+			this.api.ctx.bb.input.mouse.y = (-((evt.clientY - height / 2) - y)) / height * 2;
 		}
 
 		window.addEventListener('keyup', _onKeyUp);
 		window.addEventListener('keydown', _onKeyDown);
+		window.addEventListener('mousedown', _onMouseDown);
+		window.addEventListener('mouseup', _onMouseUp);
+		window.addEventListener('mousemove', _onMouseMove);
 		this._unregister = () => {
 			window.removeEventListener('keyup', _onKeyUp);
 			window.removeEventListener('keydown', _onKeyDown);
+			window.removeEventListener('mousedown', _onMouseDown);
+			window.removeEventListener('mouseup', _onMouseUp);
+			window.removeEventListener('mousemove', _onMouseMove);
 		};
 
 		// ---- Mount Init ----- //
@@ -208,10 +241,19 @@ class Game extends React.Component<Props, State> {
 		if (!this._paused) {
 			this._frameId = window.requestAnimationFrame(() => this.tick());
 
+			// Get objects under mouse
+			this.api.raycaster.setFromCamera(
+				this.api.ctx.bb.input.mouse,
+				this.api.ctx.camera
+			);
+			this.api.ctx.targets = this.api.raycaster.intersectObjects(this.api.ctx.scene.children);
+
+			// Tick the world
 			this.tickables.forEach(tick => tick(this.api));
 			this.api.ctx.actors.forEach(actor => actor.tick(this.api.ctx, actor.mesh));
 			this.api.ctx.renderer.render(this.api.ctx.scene, this.api.ctx.camera);
 
+			// Render react
 			this.setState({ api: this.api });
 		}
 	}
@@ -223,21 +265,26 @@ class Game extends React.Component<Props, State> {
 					<div className="flex-column flex-expand">
 						<div ref={this.containerRef} />
 						<div className="flex-row">
-							<button onClick={() => {
+							<button onClick={(evt) => {
 								this.api.ctx.camera.position.setX(
 									this.api.ctx.bb.cube.mesh.position.x
 								);
 								this.api.ctx.camera.position.setY(
 									this.api.ctx.bb.cube.mesh.position.y
 								);
+								evt.currentTarget.blur();
 							}}>Center Player</button>
 
-							<button onClick={() => {
+							<button onClick={(evt) => {
 								this.api.removeByTags([Tag.Other]);
+								evt.currentTarget.blur();
 							}}>Clear Other</button>
 						</div>
 					</div>
-					<CodeWindow keys={this.api.ctx.bb.input.keys} />
+					<CodeWindow
+						input={this.api.ctx.bb.input}
+						targets={this.api.ctx.targets}
+						/>
 				</div>
 			</div>
 		);
