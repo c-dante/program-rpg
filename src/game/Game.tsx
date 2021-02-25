@@ -4,8 +4,6 @@ import {
 	Mesh, ShaderMaterial, PlaneGeometry,
 	Scene, PerspectiveCamera, WebGLRenderer,
 	Vector3,
-	Vector2,
-	Material,
 	MeshBasicMaterial,
 } from 'three';
 import fp from 'lodash/fp';
@@ -43,7 +41,25 @@ const makeOther = (api: ContextApi) => {
 	});
 };
 
-const spell = () => {
+const basicSpellLogic = (
+	delta: number,
+	position: Vector3,
+	velocity: Vector3,
+) => {
+	position.add(velocity.multiplyScalar(delta));
+}
+
+type Spell = {
+	source: string,
+	fn: any
+};
+
+const basicSpell: Spell = {
+	source: basicSpellLogic.toString(),
+	fn: basicSpellLogic,
+};
+
+const spellCaster = (spellLogic: Spell = basicSpell) => {
 	const cooldown = 20;
 	let last = 0;
 	return (api: ContextApi, { time }: TimeStep) => {
@@ -67,7 +83,7 @@ const spell = () => {
 				// ---- @todo: phys
 				state: {
 					velocity,
-					life: 1000,
+					life: 500,
 				},
 				// ----
 				mesh: makeBox(Colors.Red),
@@ -82,7 +98,12 @@ const spell = () => {
 
 					// Phys baby
 					state.life--;
-					mesh.position.add(state.velocity.multiplyScalar(delta));
+					try {
+						spellLogic.fn(delta, mesh.position, state.velocity)
+					} catch (error) {
+						console.warn('Spell Exception', error);
+						state.life = 0;
+					}
 				}
 			});
 		}
@@ -189,12 +210,17 @@ export interface Props {}
 export interface State {
 	api: ContextApi;
 	paused: boolean;
+
+	// [SPELLS] @todo: clean up spell ideas
+	currentSpell?: Spell;
+	currentSpellTicker?: AppTick;
 }
 
+type AppTick = (api: ContextApi, step: TimeStep) => void;
 class Game extends React.Component<Props, State> {
 	containerRef: RefObject<HTMLDivElement>;
 	api: ContextApi;
-	tickables: ((api: ContextApi, step: TimeStep) => void)[] = [];
+	tickables: AppTick[] = [];
 
 	_time: number = 0;
 	_frameId: number = 0;
@@ -221,11 +247,13 @@ class Game extends React.Component<Props, State> {
 		this.api = withContext(ctx);
 		this.tickables.push(otherSpawner());
 		this.tickables.push(cameraControls());
-		this.tickables.push(spell());
 
+		console.log('State: ', this.state);
 		this.state = {
 			api: this.api,
 			paused: true,
+			currentSpell: undefined,
+			currentSpellTicker: undefined,
 		};
 	}
 
@@ -266,6 +294,7 @@ class Game extends React.Component<Props, State> {
 		// ---- Mount Init ----- //
 		this.containerRef.current?.appendChild(this.api.ctx.renderer.domElement);
 		setUpScene(this.api);
+		this.setSpell(basicSpell);
 		this.play();
 	}
 
@@ -339,7 +368,6 @@ class Game extends React.Component<Props, State> {
 								this.api.removeByTags([Tag.Other]);
 							}}>Clear Other</button>
 
-
 							<button onClick={(evt) => {
 								evt.currentTarget.blur();
 								if (this.state.paused) {
@@ -348,15 +376,49 @@ class Game extends React.Component<Props, State> {
 									this.pause();
 								}
 							}}>{this.state.paused ? 'Resume' : 'Pause'}</button>
+
+							<button onClick={() => this.setSpell(basicSpell)}>Reset Spell</button>
 						</div>
 					</div>
 					<CodeWindow
 						input={this.api.ctx.bb.input}
 						targets={this.api.ctx.targets}
+						spell={this.state.currentSpell}
+						onSpellChange={(src) => {
+							// [SPELLS] @todo: clean up spell ideas
+							console.log('on change new src', src)
+							try {
+								this.setSpell({
+									source: src,
+									// eslint-disable-next-line no-new-func
+									fn: new Function(`return ${src}`)(),
+								});
+							} catch (error) {
+								console.warn('Failed to parse spell', error);
+							}
+						}}
 						/>
 				</div>
 			</div>
 		);
+	}
+
+
+	// -------------
+	// Pull out logic / hacks I guess
+	// -------------
+	setSpell(spell: Spell) {
+		// [SPELLS] @todo: clean up spell ideas
+		if (this.state.currentSpellTicker) {
+			this.tickables = this.tickables.filter(x => x !== this.state.currentSpellTicker);
+		}
+
+		const currentSpellTicker = spellCaster(spell);
+		this.tickables.push(currentSpellTicker);
+		this.setState({
+			currentSpell: spell,
+			currentSpellTicker,
+		});
 	}
 }
 
