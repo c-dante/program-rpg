@@ -47,3 +47,8 @@
 .pause-overlay {
   pointer-events: none;
 }
+
+.pause-btn--paused {
+  color: black;
+  background-color: #e64a19;
+}
