@@ -248,7 +248,6 @@ class Game extends React.Component<Props, State> {
 		this.tickables.push(otherSpawner());
 		this.tickables.push(cameraControls());
 
-		console.log('State: ', this.state);
 		this.state = {
 			api: this.api,
 			paused: true,
@@ -392,12 +391,12 @@ class Game extends React.Component<Props, State> {
 								this.pause();
 							}
 						}}
-						onBlur={() => {
-							console.log('BLUR');
-						}}
+						// onBlur={() => {
+						// 	console.log('BLUR');
+						// }}
 						onSpellChange={(src) => {
 							// [SPELLS] @todo: clean up spell ideas
-							console.log('on change new src', src)
+							// console.log('on change new src', src)
 							try {
 								this.setSpell({
 									source: src,
@@ -405,7 +404,7 @@ class Game extends React.Component<Props, State> {
 									fn: new Function(src)(),
 								});
 							} catch (error) {
-								console.warn('Failed to parse spell', error);
+								// console.warn('Failed to parse spell', error);
 							}
 						}}
 						/>

@@ -109,9 +109,9 @@ export interface CodeWindowProps {
 	input: GameInput;
 	targets?: Intersection[];
 	spell?: { source: string };
-	onSpellChange: (source: string) => void;
-	onFocus: () => void,
-	onBlur: () => void,
+	onSpellChange?: (source: string) => void;
+	onFocus?: () => void,
+	onBlur?: () => void,
 }
 const CodeWindow: React.FC<CodeWindowProps> = ({
 	input,
