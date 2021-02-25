@@ -4,6 +4,9 @@ import {
 	Mesh, ShaderMaterial, PlaneGeometry,
 	Scene, PerspectiveCamera, WebGLRenderer,
 	Vector3,
+	Vector2,
+	Material,
+	MeshBasicMaterial,
 } from 'three';
 import fp from 'lodash/fp';
 
@@ -15,20 +18,6 @@ import CodeWindow from './CodeWindow';
 import vertShader from './shaders/test-vert';
 import fragShader from './shaders/test-frag';
 
-const makeGround = (api: ContextApi) => {
-	const { scene } = api.ctx;
-	const mesh = new Mesh(
-		new PlaneGeometry(10000, 10000),
-		new ShaderMaterial({
-			uniforms: {},
-			vertexShader: vertShader,
-			fragmentShader: fragShader,
-		}),
-	);
-	mesh.position.z = -2;
-	mesh.name = 'ground';
-	scene.add(mesh);
-};
 
 const makeOther = (api: ContextApi) => {
 	api.makeEntity({
@@ -55,19 +44,29 @@ const makeOther = (api: ContextApi) => {
 };
 
 const spell = () => {
-	const cooldown = 120;
+	const cooldown = 20;
 	let last = 0;
 	return (api: ContextApi, { time }: TimeStep) => {
-		if (api.ctx.bb.player && api.ctx.bb.input.mouse.down && time - last >= cooldown) {
+		if (
+			api.ctx.targeting
+			&& api.ctx.bb.player
+			&& api.ctx.bb.input.mouse.down
+			&& time - last >= cooldown
+		) {
 			last = time;
+
+			const target = api.ctx.targeting.point.clone().setZ(0);
+			const origin = api.ctx.bb.player.mesh.position.clone().setZ(0);
+			const velocity = target.sub(origin)
+					.normalize()
+					.multiplyScalar(0.05 * SCALE);
+
 			api.makeEntity({
 				x: api.ctx.bb.player.mesh.position.x,
 				y: api.ctx.bb.player.mesh.position.y,
 				// ---- @todo: phys
 				state: {
-					velocity: new Vector3(1, 1, 0)
-						.normalize()
-						.multiplyScalar(0.01 * SCALE),
+					velocity,
 					life: 1000,
 				},
 				// ----
@@ -159,7 +158,28 @@ const setUpScene = (api: ContextApi) => {
 	api.ctx.bb.player = cube;
 
 	// Background
-	makeGround(api);
+	const ground = new Mesh(
+		new PlaneGeometry(10000, 10000),
+		new ShaderMaterial({
+			uniforms: {},
+			vertexShader: vertShader,
+			fragmentShader: fragShader,
+		}),
+	);
+	ground.position.z = -2;
+	ground.name = 'ground';
+	api.ctx.scene.add(ground);
+
+	// Mouse targeting plane
+	const targeting = new Mesh(
+		new PlaneGeometry(1000000, 1000000),
+		new MeshBasicMaterial({
+			opacity: 0,
+			transparent: true,
+		}),
+	);
+	targeting.name = 'targeting';
+	api.ctx.scene.add(targeting);
 
 	return api;
 }
@@ -280,6 +300,7 @@ class Game extends React.Component<Props, State> {
 				this.api.ctx.camera
 			);
 			this.api.ctx.targets = this.api.raycaster.intersectObjects(this.api.ctx.scene.children);
+			this.api.ctx.targeting = this.api.ctx.targets.find(x => x.object.name === 'targeting');
 
 			// Tick the world
 			this.tickables.forEach(tick => tick(this.api, timeStep));

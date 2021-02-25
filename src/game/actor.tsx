@@ -1,5 +1,5 @@
 import fp from 'lodash/fp';
-import type { Renderer, Scene, Camera, Mesh } from 'three';
+import type { Renderer, Scene, Camera, Mesh, Intersection } from 'three';
 
 export type TimeStep = {
 	time: number,
@@ -41,7 +41,8 @@ export type Blackboard = {
 export type Context = {
 	// filters and changes each tick
 	actors: Actor[],
-	targets: any[],
+	targets: Intersection[],
+	targeting?: Intersection,
 	// Fixed things
 	readonly camera: Camera,
 	readonly scene: Scene,
