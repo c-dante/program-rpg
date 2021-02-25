@@ -6,6 +6,7 @@ body {
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 
+	/* @see: https://material.io/resources/color/#!/?view.left=0&view.right=0&primary.color=5E35B1&secondary.color=E64A19 */
 	background-color: #5E35B1;
 	color: #ffffff;
 
