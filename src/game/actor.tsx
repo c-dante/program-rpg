@@ -1,10 +1,12 @@
 import fp from 'lodash/fp';
-import { BoxGeometry, Mesh, MeshBasicMaterial, Raycaster } from 'three';
-import type { Renderer, Scene, Camera } from 'three';
+import type { Renderer, Scene, Camera, Mesh, Intersection } from 'three';
 
-import { Colors, SCALE } from './config';
+export type TimeStep = {
+	time: number,
+	delta: number,
+}
 
-export type Tick = (ctx: Context, self: Mesh) => void;
+export type Tick = (ctx: Context, step: TimeStep, self: Actor) => void;
 export interface Tickable {
 	tick: Tick;
 }
@@ -17,6 +19,8 @@ export interface Tagged {
 
 export interface Actor extends Tickable, Named, Tagged {
 	mesh: Mesh;
+	state?: any;
+	// @todo: Disposable
 };
 
 export type GameInput = {
@@ -29,17 +33,21 @@ export type GameInput = {
 };
 
 export type Blackboard = {
-	input: GameInput,
+	readonly input: GameInput,
+	player?: Actor,
 	[x: string]: any,
 };
 
 export type Context = {
-	actors: Actor[], // mut
-	camera: Camera,
-	scene: Scene,
-	renderer: Renderer,
-	bb: Blackboard,
-	targets: any[], // mut
+	// filters and changes each tick
+	actors: Actor[],
+	targets: Intersection[],
+	targeting?: Intersection,
+	// Fixed things
+	readonly camera: Camera,
+	readonly scene: Scene,
+	readonly renderer: Renderer,
+	readonly bb: Blackboard,
 };
 export const makeContext = ({
 	renderer,
@@ -65,6 +73,7 @@ export const makeActor = ({
 	name = `actor-${Math.random().toString(16).slice(2)}`,
 	tick = fp.noop,
 	tags = new Set(),
+	state,
 }: Partial<MakeActorProps> & Pick<MakeActorProps, 'mesh'>): Actor => {
 	mesh.name = name;
 	return {
@@ -72,74 +81,6 @@ export const makeActor = ({
 		mesh,
 		name,
 		tags,
+		state,
 	};
 }
-
-// ----
-
-// Typing this is annoying
-export type MakeEntityProps = {
-	x: number,
-	y: number,
-	tick: Tick,
-	color: number,
-} & Omit<Actor, 'mesh'>;
-export const makeEntity = (
-	{ actors, scene }: Context,
-	{
-		x = 0,
-		y = 0,
-		tick = fp.noop,
-		color = Colors.Purple,
-		...actorProps
-	}: Partial<MakeEntityProps> = {}
-): Actor => {
-	const mesh = new Mesh(
-		new BoxGeometry(),
-		new MeshBasicMaterial({ color })
-	);
-	mesh.position.x = x;
-	mesh.position.y = y;
-	mesh.scale.multiplyScalar(SCALE);
-	scene.add(mesh);
-
-	const entity = makeActor({ mesh, tick, ...actorProps });
-	actors.push(entity);
-
-	return entity;
-};
-
-export const removeByTags = (
-	ctx: Context,
-	tags: string[],
-): void => {
-	const [remove, keep] = fp.partition(
-		(a: Actor) => tags.every(tag => a.tags.has(tag)),
-		ctx.actors
-	);
-	ctx.actors = keep;
-	ctx.scene.remove(...remove.map(x => x.mesh));
-
-	// @todo: determine shader & geometry lifetimes
-	remove.forEach(({ mesh }) => {
-		mesh.geometry.dispose();
-		if (fp.isArray(mesh.material)) {
-			mesh.material.forEach(x => x.dispose());
-		} else {
-			mesh.material.dispose();
-		}
-	})
-};
-
-export interface ContextApi {
-	ctx: Context;
-	raycaster: Raycaster;
-	makeEntity: (props: Partial<MakeEntityProps>) => Actor;
-	removeByTags: (tags: string[]) => void;
-}
-export const withContext = (ctx: Context): ContextApi => ({
-	ctx,
-	raycaster: new Raycaster(),
-	makeEntity: fp.partial(makeEntity, [ctx]),
-	removeByTags: fp.partial(removeByTags, [ctx]),
-});

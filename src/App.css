@@ -15,6 +15,11 @@
   flex-direction: column;
 }
 
+.center {
+  align-items: center;
+  justify-content: center;
+}
+
 .padded > div {
   padding: 1em;
 }
@@ -37,4 +42,8 @@
 /* code window */
 .debug-input-table {
   font-size: 0.75em;
+}
+
+.pause-overlay {
+  pointer-events: none;
 }

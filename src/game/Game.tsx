@@ -4,53 +4,110 @@ import {
 	Mesh, ShaderMaterial, PlaneGeometry,
 	Scene, PerspectiveCamera, WebGLRenderer,
 	Vector3,
+	MeshBasicMaterial,
 } from 'three';
 import fp from 'lodash/fp';
 
 import { Colors, Controls, PLANE_Z, SCALE, Tag } from './config';
-import { ContextApi, withContext, makeContext } from './actor';
+import { makeContext, TimeStep } from './actor';
+import { ContextApi, makeBox, withContext } from './api';
 import CodeWindow from './CodeWindow';
 
 import vertShader from './shaders/test-vert';
 import fragShader from './shaders/test-frag';
 
-const makeGround = (api: ContextApi) => {
-	const { scene } = api.ctx;
-	const mesh = new Mesh(
-		new PlaneGeometry(10000, 10000),
-		new ShaderMaterial({
-			uniforms: {},
-			vertexShader: vertShader,
-			fragmentShader: fragShader,
-		}),
-	);
-	mesh.position.z = -2;
-	mesh.name = 'ground';
-	scene.add(mesh);
-};
 
 const makeOther = (api: ContextApi) => {
 	api.makeEntity({
 		x: -1,
 		y: -1,
-		color: Colors.Red,
+		mesh: makeBox(Colors.Red),
 		tags: new Set([Tag.Other]),
 		name: 'some-enemy',
-		tick(ctx, self) {
-			self.rotation.x += 0.01;
-			self.rotation.y += 0.01;
+		tick(ctx, _, { mesh }) {
+			mesh.rotation.x += 0.01;
+			mesh.rotation.y += 0.01;
 
 			// Walk toward cube
 			const speed = 0.01 * SCALE;
-			if (self.position.distanceTo(ctx.bb.cube.mesh.position) > speed) {
-				const v = ctx.bb.cube.mesh.position.clone()
-					.sub(self.position)
+			if (ctx.bb.player && mesh.position.distanceTo(ctx.bb.player.mesh.position) > speed) {
+				const v = ctx.bb.player.mesh.position.clone()
+					.sub(mesh.position)
 					.normalize()
 					.multiplyScalar(speed);
-				self.position.add(v);
+					mesh.position.add(v);
 			}
 		}
 	});
+};
+
+const basicSpellLogic = (
+	delta: number,
+	position: Vector3,
+	velocity: Vector3,
+) => {
+	position.add(velocity.multiplyScalar(delta));
+}
+
+type Spell = {
+	source: string,
+	fn: any
+};
+
+const basicSpell: Spell = {
+	source: `return ${basicSpellLogic.toString()}`,
+	fn: basicSpellLogic,
+};
+
+const spellCaster = (spellLogic: Spell = basicSpell) => {
+	const cooldown = 20;
+	let last = 0;
+	return (api: ContextApi, { time }: TimeStep) => {
+		if (
+			api.ctx.targeting
+			&& api.ctx.bb.player
+			&& api.ctx.bb.input.mouse.down
+			&& time - last >= cooldown
+		) {
+			last = time;
+
+			const target = api.ctx.targeting.point.clone().setZ(0);
+			const origin = api.ctx.bb.player.mesh.position.clone().setZ(0);
+			const velocity = target.sub(origin)
+					.normalize()
+					.multiplyScalar(0.05 * SCALE);
+
+			api.makeEntity({
+				x: api.ctx.bb.player.mesh.position.x,
+				y: api.ctx.bb.player.mesh.position.y,
+				// ---- @todo: phys
+				state: {
+					velocity,
+					life: 500,
+				},
+				// ----
+				mesh: makeBox(Colors.Red),
+				tags: new Set([Tag.Other]),
+				name: 'some-enemy',
+				tick(_, { delta }, actor) {
+					const { mesh, state } = actor;
+					if (state.life <= 1) {
+						api.remove(actor)
+						return;
+					}
+
+					// Phys baby
+					state.life--;
+					try {
+						spellLogic.fn(delta, mesh.position, state.velocity)
+					} catch (error) {
+						console.warn('Spell Exception', error);
+						state.life = 0;
+					}
+				}
+			});
+		}
+	};
 };
 
 const otherSpawner = () => {
@@ -64,22 +121,22 @@ const otherSpawner = () => {
 	}
 }
 
-const cameraControls = () => (api: ContextApi) => {
+const cameraControls = () => (api: ContextApi, { delta }: TimeStep) => {
 	const keys = api.ctx.bb.input.keys;
 
 	// Move around
 	const v = new Vector3();
 	if (keys[Controls.CameraUp]) {
-		v.y += 0.1 * SCALE;
+		v.y += 0.1 * SCALE * delta;
 	}
 	if (keys[Controls.CameraDown]) {
-		v.y -= 0.1 * SCALE;
+		v.y -= 0.1 * SCALE * delta;
 	}
 	if (keys[Controls.CameraLeft]) {
-		v.x -= 0.1 * SCALE;
+		v.x -= 0.1 * SCALE * delta;
 	}
 	if (keys[Controls.CameraRight]) {
-		v.x += 0.1 * SCALE;
+		v.x += 0.1 * SCALE * delta;
 	}
 	api.ctx.camera.position.add(
 		v.normalize().multiplyScalar(keys[Controls.CameraBoost] ? 5 : 0.5)
@@ -92,26 +149,26 @@ const setUpScene = (api: ContextApi) => {
 		x: 1,
 		y: 1,
 		name: 'cube',
-		tick(ctx, self) {
-			self.rotation.x += 0.01;
-			self.rotation.y += 0.01;
+		tick(ctx, { delta }, { mesh }) {
+			mesh.rotation.x += 0.01;
+			mesh.rotation.y += 0.01;
 
 			// Move around
 			const keys = ctx.bb.input.keys;
 			const v = new Vector3();
 			if (keys[Controls.Up]) {
-				v.y += 0.1 * SCALE;
+				v.y += 0.1 * SCALE * delta;
 			}
 			if (keys[Controls.Down]) {
-				v.y -= 0.1 * SCALE;
+				v.y -= 0.1 * SCALE * delta;
 			}
 			if (keys[Controls.Left]) {
-				v.x -= 0.1 * SCALE;
+				v.x -= 0.1 * SCALE * delta;
 			}
 			if (keys[Controls.Right]) {
-				v.x += 0.1 * SCALE;
+				v.x += 0.1 * SCALE * delta;
 			}
-			self.position.add(v.normalize().multiplyScalar(0.05));
+			mesh.position.add(v.normalize().multiplyScalar(0.05));
 		}
 	});
 
@@ -119,10 +176,31 @@ const setUpScene = (api: ContextApi) => {
 	makeOther(api);
 
 	// Blackboard for logic comms
-	api.ctx.bb.cube = cube;
+	api.ctx.bb.player = cube;
 
 	// Background
-	makeGround(api);
+	const ground = new Mesh(
+		new PlaneGeometry(10000, 10000),
+		new ShaderMaterial({
+			uniforms: {},
+			vertexShader: vertShader,
+			fragmentShader: fragShader,
+		}),
+	);
+	ground.position.z = -2;
+	ground.name = 'ground';
+	api.ctx.scene.add(ground);
+
+	// Mouse targeting plane
+	const targeting = new Mesh(
+		new PlaneGeometry(1000000, 1000000),
+		new MeshBasicMaterial({
+			opacity: 0,
+			transparent: true,
+		}),
+	);
+	targeting.name = 'targeting';
+	api.ctx.scene.add(targeting);
 
 	return api;
 }
@@ -131,14 +209,19 @@ export interface Props {}
 
 export interface State {
 	api: ContextApi;
+	paused: boolean;
+
+	// [SPELLS] @todo: clean up spell ideas
+	currentSpell?: Spell;
+	currentSpellTicker?: AppTick;
 }
 
+type AppTick = (api: ContextApi, step: TimeStep) => void;
 class Game extends React.Component<Props, State> {
 	containerRef: RefObject<HTMLDivElement>;
 	api: ContextApi;
-	tickables: ((api: ContextApi) => void)[] = [];
+	tickables: AppTick[] = [];
 
-	_paused: boolean = true;
 	_time: number = 0;
 	_frameId: number = 0;
 	_unregister: () => void = fp.noop;
@@ -157,23 +240,20 @@ class Game extends React.Component<Props, State> {
 		this.containerRef = createRef<HTMLDivElement>();
 		ctx.renderer.setSize(width, height);
 		ctx.camera.position.z = PLANE_Z;
-		ctx.bb.input = {
-			keys: fp.flow(
+		ctx.bb.input.keys = fp.flow(
 				fp.invert,
 				fp.mapValues(fp.constant(false))
-			)(Controls),
-			mouse: {
-				down: false,
-				x: 0,
-				y: 0,
-			}
-		};
+			)(Controls);
 		this.api = withContext(ctx);
 		this.tickables.push(otherSpawner());
 		this.tickables.push(cameraControls());
 
+		console.log('State: ', this.state);
 		this.state = {
 			api: this.api,
+			paused: true,
+			currentSpell: undefined,
+			currentSpellTicker: undefined,
 		};
 	}
 
@@ -214,6 +294,7 @@ class Game extends React.Component<Props, State> {
 		// ---- Mount Init ----- //
 		this.containerRef.current?.appendChild(this.api.ctx.renderer.domElement);
 		setUpScene(this.api);
+		this.setSpell(basicSpell);
 		this.play();
 	}
 
@@ -223,23 +304,24 @@ class Game extends React.Component<Props, State> {
 	}
 
 	play() {
-		if (this._paused) {
-			this._paused = false;
+		if (this.state.paused) {
 			this._frameId = window.requestAnimationFrame(() => this.tick());
+			this.setState({ paused: false });
 		}
 	}
 
 	pause() {
-		if (!this._paused) {
+		if (!this.state.paused) {
 			window.cancelAnimationFrame(this._frameId);
 			this._frameId = -1;
-			this._paused = true;
+			this.setState({ paused: true });
 		}
 	}
 
 	tick() {
-		if (!this._paused) {
+		if (!this.state.paused) {
 			this._frameId = window.requestAnimationFrame(() => this.tick());
+			const timeStep = { time: this._frameId, delta: 1 };
 
 			// Get objects under mouse
 			this.api.raycaster.setFromCamera(
@@ -247,10 +329,11 @@ class Game extends React.Component<Props, State> {
 				this.api.ctx.camera
 			);
 			this.api.ctx.targets = this.api.raycaster.intersectObjects(this.api.ctx.scene.children);
+			this.api.ctx.targeting = this.api.ctx.targets.find(x => x.object.name === 'targeting');
 
 			// Tick the world
-			this.tickables.forEach(tick => tick(this.api));
-			this.api.ctx.actors.forEach(actor => actor.tick(this.api.ctx, actor.mesh));
+			this.tickables.forEach(tick => tick(this.api, timeStep));
+			this.api.ctx.actors.forEach(actor => actor.tick(this.api.ctx, timeStep, actor));
 			this.api.ctx.renderer.render(this.api.ctx.scene, this.api.ctx.camera);
 
 			// Render react
@@ -263,31 +346,90 @@ class Game extends React.Component<Props, State> {
 			<div className="flex-expand">
 				<div className="fill flex-row padded">
 					<div className="flex-column flex-expand">
-						<div ref={this.containerRef} />
+						<div ref={this.containerRef}>
+							{this.state.paused && (
+								<div className="fill pause-overlay">
+									<h3>Paused</h3>
+								</div>
+							)}
+						</div>
 						<div className="flex-row">
-							<button onClick={(evt) => {
-								this.api.ctx.camera.position.setX(
-									this.api.ctx.bb.cube.mesh.position.x
-								);
-								this.api.ctx.camera.position.setY(
-									this.api.ctx.bb.cube.mesh.position.y
-								);
+							<button disabled={!this.api.ctx.bb.player} onClick={(evt) => {
 								evt.currentTarget.blur();
+								if (this.api.ctx.bb.player) {
+									this.api.ctx.camera.position.setX(
+										this.api.ctx.bb.player.mesh.position.x
+									);
+									this.api.ctx.camera.position.setY(
+										this.api.ctx.bb.player.mesh.position.y
+									);
+								}
 							}}>Center Player</button>
 
 							<button onClick={(evt) => {
-								this.api.removeByTags([Tag.Other]);
 								evt.currentTarget.blur();
+								this.api.removeByTags([Tag.Other]);
 							}}>Clear Other</button>
+
+							<button onClick={(evt) => {
+								evt.currentTarget.blur();
+								if (this.state.paused) {
+									this.play();
+								} else {
+									this.pause();
+								}
+							}}>{this.state.paused ? 'Resume' : 'Pause'}</button>
+
+							<button onClick={() => this.setSpell(basicSpell)}>Reset Spell</button>
 						</div>
 					</div>
 					<CodeWindow
 						input={this.api.ctx.bb.input}
 						targets={this.api.ctx.targets}
+						spell={this.state.currentSpell}
+						onFocus={() => {
+							if (!this.state.paused) {
+								this.pause();
+							}
+						}}
+						onBlur={() => {
+							console.log('BLUR');
+						}}
+						onSpellChange={(src) => {
+							// [SPELLS] @todo: clean up spell ideas
+							console.log('on change new src', src)
+							try {
+								this.setSpell({
+									source: src,
+									// eslint-disable-next-line no-new-func
+									fn: new Function(src)(),
+								});
+							} catch (error) {
+								console.warn('Failed to parse spell', error);
+							}
+						}}
 						/>
 				</div>
 			</div>
 		);
+	}
+
+
+	// -------------
+	// Pull out logic / hacks I guess
+	// -------------
+	setSpell(spell: Spell) {
+		// [SPELLS] @todo: clean up spell ideas
+		if (this.state.currentSpellTicker) {
+			this.tickables = this.tickables.filter(x => x !== this.state.currentSpellTicker);
+		}
+
+		const currentSpellTicker = spellCaster(spell);
+		this.tickables.push(currentSpellTicker);
+		this.setState({
+			currentSpell: spell,
+			currentSpellTicker,
+		});
 	}
 }
 
