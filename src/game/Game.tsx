@@ -9,7 +9,7 @@ import fp from 'lodash/fp';
 
 import { Colors, Controls, PLANE_Z, SCALE, Tag } from './config';
 import { makeContext, TimeStep } from './actor';
-import { ContextApi, withContext } from './api';
+import { ContextApi, makeBox, withContext } from './api';
 import CodeWindow from './CodeWindow';
 
 import vertShader from './shaders/test-vert';
@@ -34,7 +34,7 @@ const makeOther = (api: ContextApi) => {
 	api.makeEntity({
 		x: -1,
 		y: -1,
-		color: Colors.Red,
+		mesh: makeBox(Colors.Red),
 		tags: new Set([Tag.Other]),
 		name: 'some-enemy',
 		tick(ctx, _, self) {

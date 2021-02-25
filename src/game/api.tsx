@@ -3,27 +3,28 @@ import { BoxGeometry, Mesh, MeshBasicMaterial, Raycaster } from "three";
 import { Actor, Context, makeActor, Tick } from "./actor";
 import { Colors, SCALE } from "./config";
 
+export const makeBox = (color = Colors.Purple) => new Mesh(
+	new BoxGeometry(),
+	new MeshBasicMaterial({ color })
+);
+
 // Typing this is annoying
 export type MakeEntityProps = {
 	x: number,
 	y: number,
 	tick: Tick,
 	color: number,
-} & Omit<Actor, 'mesh'>;
+} & Actor;
 export const makeEntity = (
 	{ actors, scene }: Context,
 	{
+		mesh = makeBox(), // n.b., not a memory leak on chrome I guess
 		x = 0,
 		y = 0,
 		tick = fp.noop,
-		color = Colors.Purple,
 		...actorProps
 	}: Partial<MakeEntityProps> = {}
 ): Actor => {
-	const mesh = new Mesh(
-		new BoxGeometry(),
-		new MeshBasicMaterial({ color })
-	);
 	mesh.position.x = x;
 	mesh.position.y = y;
 	mesh.scale.multiplyScalar(SCALE);
@@ -47,6 +48,7 @@ export const removeByTags = (
 	ctx.scene.remove(...remove.map(x => x.mesh));
 
 	// @todo: determine shader & geometry lifetimes
+	// Maybe a "Disposables" idea?
 	remove.forEach(({ mesh }) => {
 		mesh.geometry.dispose();
 		if (fp.isArray(mesh.material)) {
