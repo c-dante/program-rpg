@@ -55,7 +55,7 @@ type Spell = {
 };
 
 const basicSpell: Spell = {
-	source: basicSpellLogic.toString(),
+	source: `return ${basicSpellLogic.toString()}`,
 	fn: basicSpellLogic,
 };
 
@@ -344,12 +344,15 @@ class Game extends React.Component<Props, State> {
 	render() {
 		return (
 			<div className="flex-expand">
-				{this.state.paused && (
-					<h3>Paused</h3>
-				)}
 				<div className="fill flex-row padded">
 					<div className="flex-column flex-expand">
-						<div ref={this.containerRef} />
+						<div ref={this.containerRef}>
+							{this.state.paused && (
+								<div className="fill pause-overlay">
+									<h3>Paused</h3>
+								</div>
+							)}
+						</div>
 						<div className="flex-row">
 							<button disabled={!this.api.ctx.bb.player} onClick={(evt) => {
 								evt.currentTarget.blur();
@@ -384,6 +387,14 @@ class Game extends React.Component<Props, State> {
 						input={this.api.ctx.bb.input}
 						targets={this.api.ctx.targets}
 						spell={this.state.currentSpell}
+						onFocus={() => {
+							if (!this.state.paused) {
+								this.pause();
+							}
+						}}
+						onBlur={() => {
+							console.log('BLUR');
+						}}
 						onSpellChange={(src) => {
 							// [SPELLS] @todo: clean up spell ideas
 							console.log('on change new src', src)
@@ -391,7 +402,7 @@ class Game extends React.Component<Props, State> {
 								this.setSpell({
 									source: src,
 									// eslint-disable-next-line no-new-func
-									fn: new Function(`return ${src}`)(),
+									fn: new Function(src)(),
 								});
 							} catch (error) {
 								console.warn('Failed to parse spell', error);
