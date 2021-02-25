@@ -8,7 +8,7 @@ import {
 import fp from 'lodash/fp';
 
 import { Colors, Controls, PLANE_Z, SCALE, Tag } from './config';
-import { ContextApi, withContext, makeContext } from './actor';
+import { ContextApi, withContext, makeContext, TimeStep } from './actor';
 import CodeWindow from './CodeWindow';
 
 import vertShader from './shaders/test-vert';
@@ -36,7 +36,7 @@ const makeOther = (api: ContextApi) => {
 		color: Colors.Red,
 		tags: new Set([Tag.Other]),
 		name: 'some-enemy',
-		tick(ctx, self) {
+		tick(ctx, _, self) {
 			self.rotation.x += 0.01;
 			self.rotation.y += 0.01;
 
@@ -53,6 +53,16 @@ const makeOther = (api: ContextApi) => {
 	});
 };
 
+const spell = () => {
+	const cooldown = 120;
+	let last = 0;
+	return (api: ContextApi, { time }: TimeStep) => {
+		if (api.ctx.bb.input.mouse.down && time - last >= cooldown) {
+			last = time;
+		}
+	};
+};
+
 const otherSpawner = () => {
 	let lastSpawn = Date.now();
 	return (api: ContextApi) => {
@@ -64,22 +74,22 @@ const otherSpawner = () => {
 	}
 }
 
-const cameraControls = () => (api: ContextApi) => {
+const cameraControls = () => (api: ContextApi, { delta }: TimeStep) => {
 	const keys = api.ctx.bb.input.keys;
 
 	// Move around
 	const v = new Vector3();
 	if (keys[Controls.CameraUp]) {
-		v.y += 0.1 * SCALE;
+		v.y += 0.1 * SCALE * delta;
 	}
 	if (keys[Controls.CameraDown]) {
-		v.y -= 0.1 * SCALE;
+		v.y -= 0.1 * SCALE * delta;
 	}
 	if (keys[Controls.CameraLeft]) {
-		v.x -= 0.1 * SCALE;
+		v.x -= 0.1 * SCALE * delta;
 	}
 	if (keys[Controls.CameraRight]) {
-		v.x += 0.1 * SCALE;
+		v.x += 0.1 * SCALE * delta;
 	}
 	api.ctx.camera.position.add(
 		v.normalize().multiplyScalar(keys[Controls.CameraBoost] ? 5 : 0.5)
@@ -92,7 +102,7 @@ const setUpScene = (api: ContextApi) => {
 		x: 1,
 		y: 1,
 		name: 'cube',
-		tick(ctx, self) {
+		tick(ctx, { delta }, self) {
 			self.rotation.x += 0.01;
 			self.rotation.y += 0.01;
 
@@ -100,16 +110,16 @@ const setUpScene = (api: ContextApi) => {
 			const keys = ctx.bb.input.keys;
 			const v = new Vector3();
 			if (keys[Controls.Up]) {
-				v.y += 0.1 * SCALE;
+				v.y += 0.1 * SCALE * delta;
 			}
 			if (keys[Controls.Down]) {
-				v.y -= 0.1 * SCALE;
+				v.y -= 0.1 * SCALE * delta;
 			}
 			if (keys[Controls.Left]) {
-				v.x -= 0.1 * SCALE;
+				v.x -= 0.1 * SCALE * delta;
 			}
 			if (keys[Controls.Right]) {
-				v.x += 0.1 * SCALE;
+				v.x += 0.1 * SCALE * delta;
 			}
 			self.position.add(v.normalize().multiplyScalar(0.05));
 		}
@@ -137,7 +147,7 @@ export interface State {
 class Game extends React.Component<Props, State> {
 	containerRef: RefObject<HTMLDivElement>;
 	api: ContextApi;
-	tickables: ((api: ContextApi) => void)[] = [];
+	tickables: ((api: ContextApi, step: TimeStep) => void)[] = [];
 
 	_time: number = 0;
 	_frameId: number = 0;
@@ -157,20 +167,14 @@ class Game extends React.Component<Props, State> {
 		this.containerRef = createRef<HTMLDivElement>();
 		ctx.renderer.setSize(width, height);
 		ctx.camera.position.z = PLANE_Z;
-		ctx.bb.input = {
-			keys: fp.flow(
+		ctx.bb.input.keys = fp.flow(
 				fp.invert,
 				fp.mapValues(fp.constant(false))
-			)(Controls),
-			mouse: {
-				down: false,
-				x: 0,
-				y: 0,
-			}
-		};
+			)(Controls);
 		this.api = withContext(ctx);
 		this.tickables.push(otherSpawner());
 		this.tickables.push(cameraControls());
+		this.tickables.push(spell());
 
 		this.state = {
 			api: this.api,
@@ -241,6 +245,7 @@ class Game extends React.Component<Props, State> {
 	tick() {
 		if (!this.state.paused) {
 			this._frameId = window.requestAnimationFrame(() => this.tick());
+			const timeStep = { time: this._frameId, delta: 1 };
 
 			// Get objects under mouse
 			this.api.raycaster.setFromCamera(
@@ -250,8 +255,8 @@ class Game extends React.Component<Props, State> {
 			this.api.ctx.targets = this.api.raycaster.intersectObjects(this.api.ctx.scene.children);
 
 			// Tick the world
-			this.tickables.forEach(tick => tick(this.api));
-			this.api.ctx.actors.forEach(actor => actor.tick(this.api.ctx, actor.mesh));
+			this.tickables.forEach(tick => tick(this.api, timeStep));
+			this.api.ctx.actors.forEach(actor => actor.tick(this.api.ctx, timeStep, actor.mesh));
 			this.api.ctx.renderer.render(this.api.ctx.scene, this.api.ctx.camera);
 
 			// Render react

@@ -4,7 +4,12 @@ import type { Renderer, Scene, Camera } from 'three';
 
 import { Colors, SCALE } from './config';
 
-export type Tick = (ctx: Context, self: Mesh) => void;
+export type TimeStep = {
+	time: number,
+	delta: number,
+}
+
+export type Tick = (ctx: Context, step: TimeStep, self: Mesh) => void;
 export interface Tickable {
 	tick: Tick;
 }
@@ -17,6 +22,7 @@ export interface Tagged {
 
 export interface Actor extends Tickable, Named, Tagged {
 	mesh: Mesh;
+	// @todo: Disposable
 };
 
 export type GameInput = {
@@ -29,17 +35,19 @@ export type GameInput = {
 };
 
 export type Blackboard = {
-	input: GameInput,
+	readonly input: GameInput,
 	[x: string]: any,
 };
 
 export type Context = {
-	actors: Actor[], // mut
-	camera: Camera,
-	scene: Scene,
-	renderer: Renderer,
-	bb: Blackboard,
-	targets: any[], // mut
+	// filters and changes each tick
+	actors: Actor[],
+	targets: any[],
+	// Fixed things
+	readonly camera: Camera,
+	readonly scene: Scene,
+	readonly renderer: Renderer,
+	readonly bb: Blackboard,
 };
 export const makeContext = ({
 	renderer,
@@ -131,11 +139,15 @@ export const removeByTags = (
 	})
 };
 
+/**
+ * Annoyingly mutable object
+ * Would love to mark things as mut better
+ */
 export interface ContextApi {
-	ctx: Context;
-	raycaster: Raycaster;
-	makeEntity: (props: Partial<MakeEntityProps>) => Actor;
-	removeByTags: (tags: string[]) => void;
+	readonly ctx: Context;
+	readonly raycaster: Raycaster;
+	readonly makeEntity: (props: Partial<MakeEntityProps>) => Actor;
+	readonly removeByTags: (tags: string[]) => void;
 }
 export const withContext = (ctx: Context): ContextApi => ({
 	ctx,
