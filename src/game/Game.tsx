@@ -131,6 +131,7 @@ export interface Props {}
 
 export interface State {
 	api: ContextApi;
+	paused: boolean;
 }
 
 class Game extends React.Component<Props, State> {
@@ -138,7 +139,6 @@ class Game extends React.Component<Props, State> {
 	api: ContextApi;
 	tickables: ((api: ContextApi) => void)[] = [];
 
-	_paused: boolean = true;
 	_time: number = 0;
 	_frameId: number = 0;
 	_unregister: () => void = fp.noop;
@@ -174,6 +174,7 @@ class Game extends React.Component<Props, State> {
 
 		this.state = {
 			api: this.api,
+			paused: true,
 		};
 	}
 
@@ -223,22 +224,22 @@ class Game extends React.Component<Props, State> {
 	}
 
 	play() {
-		if (this._paused) {
-			this._paused = false;
+		if (this.state.paused) {
 			this._frameId = window.requestAnimationFrame(() => this.tick());
+			this.setState({ paused: false });
 		}
 	}
 
 	pause() {
-		if (!this._paused) {
+		if (!this.state.paused) {
 			window.cancelAnimationFrame(this._frameId);
 			this._frameId = -1;
-			this._paused = true;
+			this.setState({ paused: true });
 		}
 	}
 
 	tick() {
-		if (!this._paused) {
+		if (!this.state.paused) {
 			this._frameId = window.requestAnimationFrame(() => this.tick());
 
 			// Get objects under mouse
@@ -261,24 +262,37 @@ class Game extends React.Component<Props, State> {
 	render() {
 		return (
 			<div className="flex-expand">
+				{this.state.paused && (
+					<h3>Paused</h3>
+				)}
 				<div className="fill flex-row padded">
 					<div className="flex-column flex-expand">
 						<div ref={this.containerRef} />
 						<div className="flex-row">
 							<button onClick={(evt) => {
+								evt.currentTarget.blur();
 								this.api.ctx.camera.position.setX(
 									this.api.ctx.bb.cube.mesh.position.x
 								);
 								this.api.ctx.camera.position.setY(
 									this.api.ctx.bb.cube.mesh.position.y
 								);
-								evt.currentTarget.blur();
 							}}>Center Player</button>
 
 							<button onClick={(evt) => {
-								this.api.removeByTags([Tag.Other]);
 								evt.currentTarget.blur();
+								this.api.removeByTags([Tag.Other]);
 							}}>Clear Other</button>
+
+
+							<button onClick={(evt) => {
+								evt.currentTarget.blur();
+								if (this.state.paused) {
+									this.play();
+								} else {
+									this.pause();
+								}
+							}}>{this.state.paused ? 'Resume' : 'Pause'}</button>
 						</div>
 					</div>
 					<CodeWindow
