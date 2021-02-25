@@ -37,18 +37,18 @@ const makeOther = (api: ContextApi) => {
 		mesh: makeBox(Colors.Red),
 		tags: new Set([Tag.Other]),
 		name: 'some-enemy',
-		tick(ctx, _, self) {
-			self.rotation.x += 0.01;
-			self.rotation.y += 0.01;
+		tick(ctx, _, { mesh }) {
+			mesh.rotation.x += 0.01;
+			mesh.rotation.y += 0.01;
 
 			// Walk toward cube
 			const speed = 0.01 * SCALE;
-			if (self.position.distanceTo(ctx.bb.cube.mesh.position) > speed) {
-				const v = ctx.bb.cube.mesh.position.clone()
-					.sub(self.position)
+			if (ctx.bb.player && mesh.position.distanceTo(ctx.bb.player.mesh.position) > speed) {
+				const v = ctx.bb.player.mesh.position.clone()
+					.sub(mesh.position)
 					.normalize()
 					.multiplyScalar(speed);
-				self.position.add(v);
+					mesh.position.add(v);
 			}
 		}
 	});
@@ -58,8 +58,34 @@ const spell = () => {
 	const cooldown = 120;
 	let last = 0;
 	return (api: ContextApi, { time }: TimeStep) => {
-		if (api.ctx.bb.input.mouse.down && time - last >= cooldown) {
+		if (api.ctx.bb.player && api.ctx.bb.input.mouse.down && time - last >= cooldown) {
 			last = time;
+			api.makeEntity({
+				x: api.ctx.bb.player.mesh.position.x,
+				y: api.ctx.bb.player.mesh.position.y,
+				// ---- @todo: phys
+				state: {
+					velocity: new Vector3(1, 1, 0)
+						.normalize()
+						.multiplyScalar(0.01 * SCALE),
+					life: 1000,
+				},
+				// ----
+				mesh: makeBox(Colors.Red),
+				tags: new Set([Tag.Other]),
+				name: 'some-enemy',
+				tick(_, { delta }, actor) {
+					const { mesh, state } = actor;
+					if (state.life <= 1) {
+						api.remove(actor)
+						return;
+					}
+
+					// Phys baby
+					state.life--;
+					mesh.position.add(state.velocity.multiplyScalar(delta));
+				}
+			});
 		}
 	};
 };
@@ -103,9 +129,9 @@ const setUpScene = (api: ContextApi) => {
 		x: 1,
 		y: 1,
 		name: 'cube',
-		tick(ctx, { delta }, self) {
-			self.rotation.x += 0.01;
-			self.rotation.y += 0.01;
+		tick(ctx, { delta }, { mesh }) {
+			mesh.rotation.x += 0.01;
+			mesh.rotation.y += 0.01;
 
 			// Move around
 			const keys = ctx.bb.input.keys;
@@ -122,7 +148,7 @@ const setUpScene = (api: ContextApi) => {
 			if (keys[Controls.Right]) {
 				v.x += 0.1 * SCALE * delta;
 			}
-			self.position.add(v.normalize().multiplyScalar(0.05));
+			mesh.position.add(v.normalize().multiplyScalar(0.05));
 		}
 	});
 
@@ -130,7 +156,7 @@ const setUpScene = (api: ContextApi) => {
 	makeOther(api);
 
 	// Blackboard for logic comms
-	api.ctx.bb.cube = cube;
+	api.ctx.bb.player = cube;
 
 	// Background
 	makeGround(api);
@@ -257,7 +283,7 @@ class Game extends React.Component<Props, State> {
 
 			// Tick the world
 			this.tickables.forEach(tick => tick(this.api, timeStep));
-			this.api.ctx.actors.forEach(actor => actor.tick(this.api.ctx, timeStep, actor.mesh));
+			this.api.ctx.actors.forEach(actor => actor.tick(this.api.ctx, timeStep, actor));
 			this.api.ctx.renderer.render(this.api.ctx.scene, this.api.ctx.camera);
 
 			// Render react
@@ -275,14 +301,16 @@ class Game extends React.Component<Props, State> {
 					<div className="flex-column flex-expand">
 						<div ref={this.containerRef} />
 						<div className="flex-row">
-							<button onClick={(evt) => {
+							<button disabled={!this.api.ctx.bb.player} onClick={(evt) => {
 								evt.currentTarget.blur();
-								this.api.ctx.camera.position.setX(
-									this.api.ctx.bb.cube.mesh.position.x
-								);
-								this.api.ctx.camera.position.setY(
-									this.api.ctx.bb.cube.mesh.position.y
-								);
+								if (this.api.ctx.bb.player) {
+									this.api.ctx.camera.position.setX(
+										this.api.ctx.bb.player.mesh.position.x
+									);
+									this.api.ctx.camera.position.setY(
+										this.api.ctx.bb.player.mesh.position.y
+									);
+								}
 							}}>Center Player</button>
 
 							<button onClick={(evt) => {

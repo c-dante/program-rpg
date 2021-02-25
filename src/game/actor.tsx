@@ -6,7 +6,7 @@ export type TimeStep = {
 	delta: number,
 }
 
-export type Tick = (ctx: Context, step: TimeStep, self: Mesh) => void;
+export type Tick = (ctx: Context, step: TimeStep, self: Actor) => void;
 export interface Tickable {
 	tick: Tick;
 }
@@ -19,6 +19,7 @@ export interface Tagged {
 
 export interface Actor extends Tickable, Named, Tagged {
 	mesh: Mesh;
+	state?: any;
 	// @todo: Disposable
 };
 
@@ -33,6 +34,7 @@ export type GameInput = {
 
 export type Blackboard = {
 	readonly input: GameInput,
+	player?: Actor,
 	[x: string]: any,
 };
 
@@ -70,6 +72,7 @@ export const makeActor = ({
 	name = `actor-${Math.random().toString(16).slice(2)}`,
 	tick = fp.noop,
 	tags = new Set(),
+	state,
 }: Partial<MakeActorProps> & Pick<MakeActorProps, 'mesh'>): Actor => {
 	mesh.name = name;
 	return {
@@ -77,5 +80,6 @@ export const makeActor = ({
 		mesh,
 		name,
 		tags,
+		state,
 	};
 }

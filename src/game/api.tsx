@@ -14,6 +14,7 @@ export type MakeEntityProps = {
 	y: number,
 	tick: Tick,
 	color: number,
+	state?: any,
 } & Actor;
 export const makeEntity = (
 	{ actors, scene }: Context,
@@ -22,6 +23,7 @@ export const makeEntity = (
 		x = 0,
 		y = 0,
 		tick = fp.noop,
+		state,
 		...actorProps
 	}: Partial<MakeEntityProps> = {}
 ): Actor => {
@@ -30,11 +32,25 @@ export const makeEntity = (
 	mesh.scale.multiplyScalar(SCALE);
 	scene.add(mesh);
 
-	const entity = makeActor({ mesh, tick, ...actorProps });
+	const entity = makeActor({
+		state,
+		mesh,
+		tick,
+		...actorProps
+	});
 	actors.push(entity);
 
 	return entity;
 };
+
+const disposeMesh = (mesh: Mesh): void => {
+	mesh.geometry.dispose();
+	if (fp.isArray(mesh.material)) {
+		mesh.material.forEach(x => x.dispose());
+	} else {
+		mesh.material.dispose();
+	}
+}
 
 export const removeByTags = (
 	ctx: Context,
@@ -49,15 +65,30 @@ export const removeByTags = (
 
 	// @todo: determine shader & geometry lifetimes
 	// Maybe a "Disposables" idea?
-	remove.forEach(({ mesh }) => {
-		mesh.geometry.dispose();
-		if (fp.isArray(mesh.material)) {
-			mesh.material.forEach(x => x.dispose());
-		} else {
-			mesh.material.dispose();
-		}
-	})
+	remove.forEach(({ mesh }) => disposeMesh(mesh));
 };
+
+export const remove = (
+	ctx: Context,
+	actor: Actor
+): void => {
+	let disposeScene = false
+	ctx.actors = ctx.actors.filter(x => {
+		if (x === actor) {
+			disposeScene = true;
+			return false;
+		}
+		return true;
+	});
+
+	if (disposeScene) {
+		ctx.scene.remove(actor.mesh);
+	}
+
+	// @todo: determine shader & geometry lifetimes
+	// Maybe a "Disposables" idea?
+	disposeMesh(actor.mesh);
+}
 
 /**
  * Annoyingly mutable object
@@ -67,11 +98,13 @@ export interface ContextApi {
 	readonly ctx: Context;
 	readonly raycaster: Raycaster;
 	readonly makeEntity: (props: Partial<MakeEntityProps>) => Actor;
+	readonly remove: (actor: Actor) => void;
 	readonly removeByTags: (tags: string[]) => void;
 }
 export const withContext = (ctx: Context): ContextApi => ({
 	ctx,
 	raycaster: new Raycaster(),
 	makeEntity: fp.partial(makeEntity, [ctx]),
+	remove: fp.partial(remove, [ctx]),
 	removeByTags: fp.partial(removeByTags, [ctx]),
 });
