@@ -8,7 +8,8 @@ import {
 import fp from 'lodash/fp';
 
 import { Colors, Controls, PLANE_Z, SCALE, Tag } from './config';
-import { ContextApi, withContext, makeContext, TimeStep } from './actor';
+import { makeContext, TimeStep } from './actor';
+import { ContextApi, withContext } from './api';
 import CodeWindow from './CodeWindow';
 
 import vertShader from './shaders/test-vert';
