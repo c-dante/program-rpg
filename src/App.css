@@ -15,6 +15,10 @@
   flex-direction: column;
 }
 
+.flex-middle {
+  align-items: center;
+}
+
 .center {
   align-items: center;
   justify-content: center;
@@ -39,11 +43,7 @@
 
 
 
-/* code window */
-.debug-input-table {
-  font-size: 0.75em;
-}
-
+/* code window classes */
 .pause-overlay {
   pointer-events: none;
 }
@@ -51,4 +51,9 @@
 .pause-btn--paused {
   color: black;
   background-color: #e64a19;
+}
+
+.error-bar {
+  margin: 0;
+  padding: 0.5em 0;
 }

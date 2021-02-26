@@ -15,6 +15,7 @@ import CodeWindow from './CodeWindow';
 
 import vertShader from './shaders/test-vert';
 import fragShader from './shaders/test-frag';
+import { Spell, basicSpell, spellCaster } from './magic';
 
 
 const makeOther = (api: ContextApi) => {
@@ -39,81 +40,6 @@ const makeOther = (api: ContextApi) => {
 			}
 		}
 	});
-};
-
-
-type Spell = {
-	source: string,
-	fn: any
-};
-
-// const basicSpellLogic = (
-// 	delta: number,
-// 	position: Vector3,
-// 	velocity: Vector3,
-// ) => {
-// 	position.add(velocity.multiplyScalar(delta));
-// }
-
-const basicSpellSource = `return (delta, position, velocity) => {
-	position.add(velocity.multiplyScalar(delta));
-};`
-
-const basicSpell: Spell = {
-	source: basicSpellSource,
-	// eslint-disable-next-line no-new-func
-	fn: new Function(basicSpellSource)(),
-};
-
-const spellCaster = (spellLogic: Spell = basicSpell) => {
-	const cooldown = 20;
-	let last = 0;
-	return (api: ContextApi, { time }: TimeStep) => {
-		if (
-			api.ctx.targeting
-			&& api.ctx.bb.player
-			&& api.ctx.bb.input.mouse.down
-			&& time - last >= cooldown
-		) {
-			last = time;
-
-			const target = api.ctx.targeting.point.clone().setZ(0);
-			const origin = api.ctx.bb.player.mesh.position.clone().setZ(0);
-			const velocity = target.sub(origin)
-					.normalize()
-					.multiplyScalar(0.05 * SCALE);
-
-			api.makeEntity({
-				x: api.ctx.bb.player.mesh.position.x,
-				y: api.ctx.bb.player.mesh.position.y,
-				// ---- @todo: phys
-				state: {
-					velocity,
-					life: 500,
-				},
-				// ----
-				mesh: makeBox(Colors.Red),
-				tags: new Set([Tag.Other]),
-				name: 'some-enemy',
-				tick(_, { delta }, actor) {
-					const { mesh, state } = actor;
-					if (state.life <= 1) {
-						api.remove(actor)
-						return;
-					}
-
-					// Phys baby
-					state.life--;
-					try {
-						spellLogic.fn(delta, mesh.position, state.velocity)
-					} catch (error) {
-						console.warn('Spell Exception', error);
-						state.life = 0;
-					}
-				}
-			});
-		}
-	};
 };
 
 const otherSpawner = () => {
@@ -402,18 +328,8 @@ class Game extends React.Component<Props, State> {
 						// onBlur={() => {
 						// 	console.log('BLUR');
 						// }}
-						onSpellChange={(src) => {
-							// [SPELLS] @todo: clean up spell ideas
-							// console.log('on change new src', src)
-							try {
-								this.setSpell({
-									source: src,
-									// eslint-disable-next-line no-new-func
-									fn: new Function(src)(),
-								});
-							} catch (error) {
-								// console.warn('Failed to parse spell', error);
-							}
+						onSpellChange={(spell: Spell) => {
+							this.setSpell(spell);
 						}}
 						/>
 				</div>
