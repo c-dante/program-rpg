@@ -1,10 +1,13 @@
+import { Vector3 } from "three";
 import { TimeStep } from "./actor";
 import { ContextApi, makeBox } from "./api";
 import { SCALE, Colors, Tag } from "./config";
 
+export type SpellFn = () => (delta: number, position: Vector3, velocity: Vector3) => void;
+
 export type Spell = {
 	source: string,
-	fn: any
+	fn: SpellFn
 };
 
 // const basicSpellLogic = (
@@ -18,7 +21,7 @@ export type Spell = {
 export const compileSpell = (incantation: string) => ({
 	source: incantation,
 	// eslint-disable-next-line no-new-func
-	fn: new Function(incantation)(),
+	fn: new Function(incantation) as any,
 });
 
 export const basicSpell: Spell = compileSpell(`return (delta, position, velocity) => {
@@ -43,6 +46,7 @@ export const spellCaster = (spellLogic: Spell = basicSpell) => {
 					.normalize()
 					.multiplyScalar(0.05 * SCALE);
 
+			const entityLogic = spellLogic.fn();
 			api.makeEntity({
 				x: api.ctx.bb.player.mesh.position.x,
 				y: api.ctx.bb.player.mesh.position.y,
@@ -65,7 +69,7 @@ export const spellCaster = (spellLogic: Spell = basicSpell) => {
 					// Phys baby
 					state.life--;
 					try {
-						spellLogic.fn(delta, mesh.position, state.velocity)
+						entityLogic(delta, mesh.position, state.velocity)
 					} catch (error) {
 						console.warn('Spell Exception', error);
 						state.life = 0;

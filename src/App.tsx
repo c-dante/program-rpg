@@ -9,6 +9,8 @@ const Header = () => (
 			A little playground of an idea.
 			Spells and weapons are backed by scripts.
 			You can modify these scripts at the cost of MP per compute.
+
+			See <a href="https://threejs.org/docs/index.html#api/en/math/Vector3">three.js / Vector3</a> for docs on spell's position/velocity types.
 		</p>
 	</div>
 );

@@ -25,7 +25,7 @@
 }
 
 .padded > div {
-  padding: 1em;
+  padding: 0.5em;
 }
 
 .flex-expand {
@@ -46,6 +46,13 @@
 /* code window classes */
 .pause-overlay {
   pointer-events: none;
+}
+
+.spell-saved-overlay {
+  pointer-events: none;
+  transition-property: opacity;
+  transition-duration: 1s;
+  top: 1.5em;
 }
 
 .pause-btn--paused {

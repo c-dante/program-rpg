@@ -144,6 +144,7 @@ export interface State {
 	paused: boolean;
 
 	// [SPELLS] @todo: clean up spell ideas
+	spellSaved: number;
 	currentSpell?: Spell;
 	currentSpellTicker?: AppTick;
 }
@@ -183,6 +184,8 @@ class Game extends React.Component<Props, State> {
 		this.state = {
 			api: this.api,
 			paused: true,
+
+			spellSaved: 0,
 			currentSpell: undefined,
 			currentSpellTicker: undefined,
 		};
@@ -283,6 +286,12 @@ class Game extends React.Component<Props, State> {
 									<h3>Paused</h3>
 								</div>
 							)}
+
+							<div className="fill spell-saved-overlay" style={{
+								opacity: Boolean(this.state.spellSaved) ? 1 : 0,
+							}}>
+								<h3>Spell Saved</h3>
+							</div>
 						</div>
 						<div className="flex-row">
 							<button disabled={!this.api.ctx.bb.player} onClick={(evt) => {
@@ -349,10 +358,22 @@ class Game extends React.Component<Props, State> {
 
 		const currentSpellTicker = spellCaster(spell);
 		this.tickables.push(currentSpellTicker);
+
+		if (this.state.spellSaved) {
+			clearTimeout(this.state.spellSaved);
+		}
+		const saveTimeout = +setTimeout(() => {
+			this.setState({
+				spellSaved: 0,
+			});
+		}, 2000);
+
 		this.setState({
+			spellSaved: saveTimeout,
 			currentSpell: spell,
 			currentSpellTicker,
 		});
+
 	}
 }
 
