@@ -5,6 +5,7 @@ import {
 	Scene, PerspectiveCamera, WebGLRenderer,
 	Vector3,
 	MeshBasicMaterial,
+	Spherical,
 } from 'three';
 import fp from 'lodash/fp';
 
@@ -15,12 +16,19 @@ import CodeWindow from './CodeWindow';
 
 import vertShader from './shaders/test-vert';
 import fragShader from './shaders/test-frag';
+import { Spell, basicSpell, spellCaster } from './magic';
 
 
 const makeOther = (api: ContextApi) => {
+	// Make the other near the player
+	const origin = (api.ctx.bb.player?.mesh?.position ?? new Vector3()).clone()
+		.add(
+			new Vector3().setFromSphericalCoords(Math.random() * 4 + 3, Math.random() * Math.PI * 2, Math.PI/2)
+		);
+
 	api.makeEntity({
-		x: -1,
-		y: -1,
+		x: origin.x,
+		y: origin.y,
 		mesh: makeBox(Colors.Red),
 		tags: new Set([Tag.Other]),
 		name: 'some-enemy',
@@ -41,86 +49,11 @@ const makeOther = (api: ContextApi) => {
 	});
 };
 
-
-type Spell = {
-	source: string,
-	fn: any
-};
-
-// const basicSpellLogic = (
-// 	delta: number,
-// 	position: Vector3,
-// 	velocity: Vector3,
-// ) => {
-// 	position.add(velocity.multiplyScalar(delta));
-// }
-
-const basicSpellSource = `return (delta, position, velocity) => {
-	position.add(velocity.multiplyScalar(delta));
-};`
-
-const basicSpell: Spell = {
-	source: basicSpellSource,
-	// eslint-disable-next-line no-new-func
-	fn: new Function(basicSpellSource)(),
-};
-
-const spellCaster = (spellLogic: Spell = basicSpell) => {
-	const cooldown = 20;
-	let last = 0;
-	return (api: ContextApi, { time }: TimeStep) => {
-		if (
-			api.ctx.targeting
-			&& api.ctx.bb.player
-			&& api.ctx.bb.input.mouse.down
-			&& time - last >= cooldown
-		) {
-			last = time;
-
-			const target = api.ctx.targeting.point.clone().setZ(0);
-			const origin = api.ctx.bb.player.mesh.position.clone().setZ(0);
-			const velocity = target.sub(origin)
-					.normalize()
-					.multiplyScalar(0.05 * SCALE);
-
-			api.makeEntity({
-				x: api.ctx.bb.player.mesh.position.x,
-				y: api.ctx.bb.player.mesh.position.y,
-				// ---- @todo: phys
-				state: {
-					velocity,
-					life: 500,
-				},
-				// ----
-				mesh: makeBox(Colors.Red),
-				tags: new Set([Tag.Other]),
-				name: 'some-enemy',
-				tick(_, { delta }, actor) {
-					const { mesh, state } = actor;
-					if (state.life <= 1) {
-						api.remove(actor)
-						return;
-					}
-
-					// Phys baby
-					state.life--;
-					try {
-						spellLogic.fn(delta, mesh.position, state.velocity)
-					} catch (error) {
-						console.warn('Spell Exception', error);
-						state.life = 0;
-					}
-				}
-			});
-		}
-	};
-};
-
 const otherSpawner = () => {
 	let lastSpawn = Date.now();
 	return (api: ContextApi) => {
 		const keys = api.ctx.bb.input.keys;
-		if (keys[Controls.Spawn] && Date.now() - lastSpawn >= 1000) {
+		if (keys[Controls.Spawn] && Date.now() - lastSpawn >= 250) {
 			lastSpawn = Date.now();
 			makeOther(api);
 		}
@@ -218,6 +151,7 @@ export interface State {
 	paused: boolean;
 
 	// [SPELLS] @todo: clean up spell ideas
+	spellSaved: number;
 	currentSpell?: Spell;
 	currentSpellTicker?: AppTick;
 }
@@ -254,10 +188,11 @@ class Game extends React.Component<Props, State> {
 		this.tickables.push(otherSpawner());
 		this.tickables.push(cameraControls());
 
-		console.log('State: ', this.state);
 		this.state = {
 			api: this.api,
 			paused: true,
+
+			spellSaved: 0,
 			currentSpell: undefined,
 			currentSpellTicker: undefined,
 		};
@@ -358,6 +293,12 @@ class Game extends React.Component<Props, State> {
 									<h3>Paused</h3>
 								</div>
 							)}
+
+							<div className="fill spell-saved-overlay" style={{
+								opacity: Boolean(this.state.spellSaved) ? 1 : 0,
+							}}>
+								<h3>Spell Saved</h3>
+							</div>
 						</div>
 						<div className="flex-row">
 							<button disabled={!this.api.ctx.bb.player} onClick={(evt) => {
@@ -400,21 +341,11 @@ class Game extends React.Component<Props, State> {
 								this.pause();
 							}
 						}}
-						onBlur={() => {
-							console.log('BLUR');
-						}}
-						onSpellChange={(src) => {
-							// [SPELLS] @todo: clean up spell ideas
-							console.log('on change new src', src)
-							try {
-								this.setSpell({
-									source: src,
-									// eslint-disable-next-line no-new-func
-									fn: new Function(src)(),
-								});
-							} catch (error) {
-								console.warn('Failed to parse spell', error);
-							}
+						// onBlur={() => {
+						// 	console.log('BLUR');
+						// }}
+						onSpellChange={(spell: Spell) => {
+							this.setSpell(spell);
 						}}
 						/>
 				</div>
@@ -434,10 +365,22 @@ class Game extends React.Component<Props, State> {
 
 		const currentSpellTicker = spellCaster(spell);
 		this.tickables.push(currentSpellTicker);
+
+		if (this.state.spellSaved) {
+			clearTimeout(this.state.spellSaved);
+		}
+		const saveTimeout = +setTimeout(() => {
+			this.setState({
+				spellSaved: 0,
+			});
+		}, 2000);
+
 		this.setState({
+			spellSaved: saveTimeout,
 			currentSpell: spell,
 			currentSpellTicker,
 		});
+
 	}
 }
 

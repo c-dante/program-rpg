@@ -17,6 +17,11 @@ body {
   left: 0;
 }
 
+a {
+	color: #ffffff;
+	font-weight: bolder;
+}
+
 h1, h2, h3, h4 {
 	padding: 0;
 	margin: 0 0 1em 0;
@@ -24,4 +29,19 @@ h1, h2, h3, h4 {
 
 div {
 	position: relative;
+}
+
+
+/* ----- */
+
+.text-big {
+	font-size: 1.2em;
+}
+
+.text-mid {
+	font-size: 0.9em;
+}
+
+.text-small {
+	font-size: 0.8em;
 }

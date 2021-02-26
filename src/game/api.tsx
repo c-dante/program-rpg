@@ -68,27 +68,23 @@ export const removeByTags = (
 	remove.forEach(({ mesh }) => disposeMesh(mesh));
 };
 
-export const remove = (
+export const removeAll = (
 	ctx: Context,
-	actor: Actor
+	actors: Actor[],
 ): void => {
-	let disposeScene = false
-	ctx.actors = ctx.actors.filter(x => {
-		if (x === actor) {
-			disposeScene = true;
-			return false;
-		}
-		return true;
-	});
-
-	if (disposeScene) {
-		ctx.scene.remove(actor.mesh);
-	}
+	const actorSet = new Set(actors);
+	ctx.actors = ctx.actors.filter(x => !actorSet.has(x));
 
 	// @todo: determine shader & geometry lifetimes
 	// Maybe a "Disposables" idea?
-	disposeMesh(actor.mesh);
-}
+	ctx.scene.remove(...actors.map(x => x.mesh));
+	actors.forEach(x => disposeMesh(x.mesh));
+};
+
+export const remove = (
+	ctx: Context,
+	actor: Actor
+): void => removeAll(ctx, [actor]);
 
 /**
  * Annoyingly mutable object
@@ -99,6 +95,7 @@ export interface ContextApi {
 	readonly raycaster: Raycaster;
 	readonly makeEntity: (props: Partial<MakeEntityProps>) => Actor;
 	readonly remove: (actor: Actor) => void;
+	readonly removeAll: (actor: Actor[]) => void;
 	readonly removeByTags: (tags: string[]) => void;
 }
 export const withContext = (ctx: Context): ContextApi => ({
@@ -106,5 +103,6 @@ export const withContext = (ctx: Context): ContextApi => ({
 	raycaster: new Raycaster(),
 	makeEntity: fp.partial(makeEntity, [ctx]),
 	remove: fp.partial(remove, [ctx]),
+	removeAll: fp.partial(removeAll, [ctx]),
 	removeByTags: fp.partial(removeByTags, [ctx]),
 });

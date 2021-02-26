@@ -15,13 +15,17 @@
   flex-direction: column;
 }
 
+.flex-middle {
+  align-items: center;
+}
+
 .center {
   align-items: center;
   justify-content: center;
 }
 
 .padded > div {
-  padding: 1em;
+  padding: 0.5em;
 }
 
 .flex-expand {
@@ -39,16 +43,24 @@
 
 
 
-/* code window */
-.debug-input-table {
-  font-size: 0.75em;
-}
-
+/* code window classes */
 .pause-overlay {
   pointer-events: none;
+}
+
+.spell-saved-overlay {
+  pointer-events: none;
+  transition-property: opacity;
+  transition-duration: 1s;
+  top: 1.5em;
 }
 
 .pause-btn--paused {
   color: black;
   background-color: #e64a19;
+}
+
+.error-bar {
+  margin: 0;
+  padding: 0.5em 0;
 }

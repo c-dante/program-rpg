@@ -1,4 +1,4 @@
-import React, { createRef, RefObject, useEffect, useState } from 'react';
+import React, { createRef, RefObject, useCallback, useEffect, useState } from 'react';
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/addon/edit/matchbrackets';
@@ -8,6 +8,7 @@ import type { Intersection } from 'three';
 import { Controls } from './config';
 import { GameInput } from './actor';
 import fp from 'lodash/fp';
+import { compileSpell, Spell } from './magic';
 
 export interface Props {
 	source?: String;
@@ -70,7 +71,7 @@ class SpellEditor extends React.Component<Props, State> {
 }
 
 const DebugInputTable = ({ input }) => (
-	<div className="debug-input-table">
+	<div className="text-small">
 		<table>
 			<colgroup>
 				<col width="40%" />
@@ -100,7 +101,7 @@ const DebugInputTable = ({ input }) => (
 );
 
 const DebugTarget = ({ target }) => (
-	<div className="debug-target">
+	<div className="text-small">
 		Target: {target.name}
 	</div>
 );
@@ -108,10 +109,10 @@ const DebugTarget = ({ target }) => (
 export interface CodeWindowProps {
 	input: GameInput;
 	targets?: Intersection[];
-	spell?: { source: string };
-	onSpellChange: (source: string) => void;
-	onFocus: () => void,
-	onBlur: () => void,
+	spell?: Spell;
+	onSpellChange?: (spell: Spell) => void;
+	onFocus?: () => void,
+	onBlur?: () => void,
 }
 const CodeWindow: React.FC<CodeWindowProps> = ({
 	input,
@@ -122,22 +123,38 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
 	onBlur = fp.noop,
 }) => {
 	const [code, setCode] = useState(spell?.source ?? '');
-	const [localCode, setLocalCode] = useState(spell?.source ?? '');
+	const [error, setError] = useState();
+	const [localSpell, setLocalSpell] = useState(spell);
 	useEffect(() => {
 		if (spell?.source && spell.source !== code) {
 			setCode(spell.source);
+			setLocalSpell(spell);
 		}
-	}, [code, spell]);
+	}, [code, spell, setLocalSpell]);
+
+	const parseSpell = useCallback((incantation: string) => {
+		try {
+			const newSpell = compileSpell(incantation);
+			setLocalSpell(newSpell);
+			setError(undefined);
+		} catch (error) {
+			setLocalSpell(undefined);
+			setError(error);
+		}
+	}, []);
 
 	return (
 	<div className="flex-column flex-expand no-scroll">
 		<h4>Spells</h4>
-		<button onClick={() => {
-			onSpellChange(localCode);
+		<div className="error-bar text-small flex-row flex-middle">{error && String(error)}&nbsp;</div>
+		<button disabled={error} onClick={() => {
+			if (localSpell) {
+				onSpellChange(localSpell);
+			}
 		}}>Update</button>
 		<SpellEditor
 			source={code}
-			onChange={setLocalCode}
+			onChange={parseSpell}
 			onFocus={onFocus}
 			onBlur={onBlur}
 		/>

@@ -23,6 +23,7 @@ export const Controls = {
 
 export const Tag = {
 	Other: 'Other',
+	Bullet: 'Bullet',
 };
 
 export const SCALE = 1;
