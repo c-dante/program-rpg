@@ -5,6 +5,7 @@ import {
 	Scene, PerspectiveCamera, WebGLRenderer,
 	Vector3,
 	MeshBasicMaterial,
+	Spherical,
 } from 'three';
 import fp from 'lodash/fp';
 
@@ -19,9 +20,15 @@ import { Spell, basicSpell, spellCaster } from './magic';
 
 
 const makeOther = (api: ContextApi) => {
+	// Make the other near the player
+	const origin = (api.ctx.bb.player?.mesh?.position ?? new Vector3()).clone()
+		.add(
+			new Vector3().setFromSphericalCoords(Math.random() * 4 + 3, Math.random() * Math.PI * 2, Math.PI/2)
+		);
+
 	api.makeEntity({
-		x: -1,
-		y: -1,
+		x: origin.x,
+		y: origin.y,
 		mesh: makeBox(Colors.Red),
 		tags: new Set([Tag.Other]),
 		name: 'some-enemy',
