@@ -46,7 +46,7 @@ const otherSpawner = () => {
 	let lastSpawn = Date.now();
 	return (api: ContextApi) => {
 		const keys = api.ctx.bb.input.keys;
-		if (keys[Controls.Spawn] && Date.now() - lastSpawn >= 1000) {
+		if (keys[Controls.Spawn] && Date.now() - lastSpawn >= 250) {
 			lastSpawn = Date.now();
 			makeOther(api);
 		}

@@ -1,6 +1,6 @@
-import { Vector3 } from "three";
+import { BoxGeometry, Mesh, MeshBasicMaterial, Vector3 } from "three";
 import { TimeStep } from "./actor";
-import { ContextApi, makeBox } from "./api";
+import { ContextApi } from "./api";
 import { SCALE, Colors, Tag } from "./config";
 
 export type SpellFn = (_: typeof Vector3) => (delta: number, position: Vector3, velocity: Vector3) => void;
@@ -66,9 +66,11 @@ export const spellCaster = (spellLogic: Spell = basicSpell) => {
 					life: 500,
 				},
 				// ----
-				mesh: makeBox(Colors.Red),
-				tags: new Set([Tag.Other]),
-				name: 'some-enemy',
+				mesh: new Mesh(
+					new BoxGeometry(0.1, 0.1, 0.1),
+					new MeshBasicMaterial({ color: Colors.Red })
+				),
+				tags: new Set([ Tag.Bullet]),
 				tick(_, { delta }, actor) {
 					const { mesh, state } = actor;
 					if (state.life <= 1) {
@@ -79,7 +81,14 @@ export const spellCaster = (spellLogic: Spell = basicSpell) => {
 					// Phys baby
 					state.life--;
 					try {
-						entityLogic(delta, mesh.position, state.velocity)
+						entityLogic(delta, mesh.position, state.velocity);
+						const collide = api.ctx.actors.find(
+							x => x.tags.has(Tag.Other)
+								&& x.mesh.position.distanceTo(mesh.position) <= 0.8
+						);
+						if (collide) {
+							api.removeAll([collide, actor]);
+						}
 					} catch (error) {
 						console.warn('Spell Exception', error);
 						state.life = 0;
