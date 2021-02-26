@@ -3,7 +3,7 @@ import { TimeStep } from "./actor";
 import { ContextApi, makeBox } from "./api";
 import { SCALE, Colors, Tag } from "./config";
 
-export type SpellFn = () => (delta: number, position: Vector3, velocity: Vector3) => void;
+export type SpellFn = (_: typeof Vector3) => (delta: number, position: Vector3, velocity: Vector3) => void;
 
 export type Spell = {
 	source: string,
@@ -18,11 +18,21 @@ export type Spell = {
 // 	position.add(velocity.multiplyScalar(delta));
 // }
 
-export const compileSpell = (incantation: string) => ({
-	source: incantation,
+export const invokeNewSpell = (spell: SpellFn) => spell(Vector3);
+
+export const compileSpell = (incantation: string) => {
 	// eslint-disable-next-line no-new-func
-	fn: new Function(incantation) as any,
-});
+	const fn = new Function(`"use strict";return (Vector3) => { ${incantation} }`)() as SpellFn;
+
+	// Ensure we can evoke
+	invokeNewSpell(fn);
+
+	// Return the object
+	return {
+		source: incantation,
+		fn,
+	};
+}
 
 export const basicSpell: Spell = compileSpell(`return (delta, position, velocity) => {
 	position.add(velocity.multiplyScalar(delta));
@@ -40,13 +50,13 @@ export const spellCaster = (spellLogic: Spell = basicSpell) => {
 		) {
 			last = time;
 
+			const entityLogic = invokeNewSpell(spellLogic.fn);
 			const target = api.ctx.targeting.point.clone().setZ(0);
 			const origin = api.ctx.bb.player.mesh.position.clone().setZ(0);
 			const velocity = target.sub(origin)
 					.normalize()
 					.multiplyScalar(0.05 * SCALE);
 
-			const entityLogic = spellLogic.fn();
 			api.makeEntity({
 				x: api.ctx.bb.player.mesh.position.x,
 				y: api.ctx.bb.player.mesh.position.y,
