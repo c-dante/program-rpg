@@ -41,22 +41,28 @@ const makeOther = (api: ContextApi) => {
 	});
 };
 
-const basicSpellLogic = (
-	delta: number,
-	position: Vector3,
-	velocity: Vector3,
-) => {
-	position.add(velocity.multiplyScalar(delta));
-}
 
 type Spell = {
 	source: string,
 	fn: any
 };
 
+// const basicSpellLogic = (
+// 	delta: number,
+// 	position: Vector3,
+// 	velocity: Vector3,
+// ) => {
+// 	position.add(velocity.multiplyScalar(delta));
+// }
+
+const basicSpellSource = `return (delta, position, velocity) => {
+	position.add(velocity.multiplyScalar(delta));
+};`
+
 const basicSpell: Spell = {
-	source: `return ${basicSpellLogic.toString()}`,
-	fn: basicSpellLogic,
+	source: basicSpellSource,
+	// eslint-disable-next-line no-new-func
+	fn: new Function(basicSpellSource)(),
 };
 
 const spellCaster = (spellLogic: Spell = basicSpell) => {
@@ -370,7 +376,9 @@ class Game extends React.Component<Props, State> {
 								this.api.removeByTags([Tag.Other]);
 							}}>Clear Other</button>
 
-							<button onClick={(evt) => {
+							<button
+								className={this.state.paused ? 'pause-btn--paused' : 'pause-btn--playing'}
+								onClick={(evt) => {
 								evt.currentTarget.blur();
 								if (this.state.paused) {
 									this.play();
