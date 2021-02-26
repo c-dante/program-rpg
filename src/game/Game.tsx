@@ -5,7 +5,6 @@ import {
 	Scene, PerspectiveCamera, WebGLRenderer,
 	Vector3,
 	MeshBasicMaterial,
-	Spherical,
 } from 'three';
 import fp from 'lodash/fp';
 
@@ -16,7 +15,7 @@ import CodeWindow from './CodeWindow';
 
 import vertShader from './shaders/test-vert';
 import fragShader from './shaders/test-frag';
-import { Spell, basicSpell, spellCaster } from './magic';
+import { Spell, spellBook, spellCaster } from './magic';
 
 
 const makeOther = (api: ContextApi) => {
@@ -235,7 +234,7 @@ class Game extends React.Component<Props, State> {
 		// ---- Mount Init ----- //
 		this.containerRef.current?.appendChild(this.api.ctx.renderer.domElement);
 		setUpScene(this.api);
-		this.setSpell(basicSpell);
+		this.setSpell(fp.sample(spellBook) ?? spellBook[0]);
 		this.play();
 	}
 
@@ -329,7 +328,19 @@ class Game extends React.Component<Props, State> {
 								}
 							}}>{this.state.paused ? 'Resume' : 'Pause'}</button>
 
-							<button onClick={() => this.setSpell(basicSpell)}>Reset Spell</button>
+							<button onClick={() => this.setSpell(fp.sample(spellBook) ?? spellBook[0])}>Random Spell</button>
+							<select value={-1} onChange={evt => {
+								evt.currentTarget.blur();
+								const spell = spellBook[evt.target.value];
+								if (spell) {
+									this.setSpell(spell);
+								}
+							}}>
+								<option value={-1}>Spellbook</option>
+								{spellBook.map((_, i) => (
+									<option value={i} key={i}>Spell {i}</option>
+								))}
+							</select>
 						</div>
 					</div>
 					<CodeWindow
@@ -341,9 +352,6 @@ class Game extends React.Component<Props, State> {
 								this.pause();
 							}
 						}}
-						// onBlur={() => {
-						// 	console.log('BLUR');
-						// }}
 						onSpellChange={(spell: Spell) => {
 							this.setSpell(spell);
 						}}

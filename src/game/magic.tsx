@@ -10,14 +10,6 @@ export type Spell = {
 	fn: SpellFn
 };
 
-// const basicSpellLogic = (
-// 	delta: number,
-// 	position: Vector3,
-// 	velocity: Vector3,
-// ) => {
-// 	position.add(velocity.multiplyScalar(delta));
-// }
-
 export const invokeNewSpell = (spell: SpellFn) => spell(Vector3);
 
 export const compileSpell = (incantation: string) => {
@@ -34,11 +26,33 @@ export const compileSpell = (incantation: string) => {
 	};
 }
 
-export const basicSpell: Spell = compileSpell(`return (delta, position, velocity) => {
-	position.add(velocity.multiplyScalar(delta));
-};`);
+export const spellBook: Spell[] = [
+	compileSpell(
+`return (delta, position, velocity) => {
+  position.add(velocity.multiplyScalar(delta));
+};`),
+	compileSpell(
+`let theta = 0;
+const up = new Vector3(0.0, 0.0, 1.0);
+return (delta, position, velocity) => {
+  position.add(velocity.multiplyScalar(delta));
+  velocity.applyAxisAngle(up, theta);
+  theta += 0.0001;
+};`),
+	compileSpell(
+	`const up = new Vector3(0.0, 0.0, 1.0);
+	const theta = Math.random() * Math.PI * 2;
+	const fixedVelocity = new Vector3(1.0, 1.0, 0.0)
+		.applyAxisAngle(up, theta)
+		.normalize()
+		.multiplyScalar(0.03);
 
-export const spellCaster = (spellLogic: Spell = basicSpell) => {
+	return (delta, position, velocity) => {
+		position.add(fixedVelocity.multiplyScalar(delta));
+	};`)
+];
+
+export const spellCaster = (spellLogic: Spell = spellBook[0]) => {
 	const cooldown = 20;
 	let last = 0;
 	return (api: ContextApi, { time }: TimeStep) => {
