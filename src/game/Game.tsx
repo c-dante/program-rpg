@@ -81,6 +81,18 @@ const cameraControls = () => (api: ContextApi, { delta }: TimeStep) => {
 	);
 }
 
+const twinstickCamera = () => (api: ContextApi) => {
+	if (api.ctx.bb.player?.mesh.position) {
+		const target = api.ctx.bb.player.mesh.position.clone()
+			.setZ(api.ctx.camera.position.z);
+		if (api.ctx.camera.position.distanceTo(target) < 0.1) {
+			api.ctx.camera.position.copy(target);
+		} else {
+			api.ctx.camera.position.lerp(target, 0.1)
+		}
+	}
+}
+
 const setUpScene = (api: ContextApi) => {
 	// Player stuff
 	const cube = api.makeEntity({
@@ -94,19 +106,20 @@ const setUpScene = (api: ContextApi) => {
 			// Move around
 			const keys = ctx.bb.input.keys;
 			const v = new Vector3();
+			const speed = keys[Controls.Boost] ? 0.2 : 0.1;
 			if (keys[Controls.Up]) {
-				v.y += 0.1 * SCALE * delta;
+				v.y++;
 			}
 			if (keys[Controls.Down]) {
-				v.y -= 0.1 * SCALE * delta;
+				v.y--;
 			}
 			if (keys[Controls.Left]) {
-				v.x -= 0.1 * SCALE * delta;
+				v.x--;
 			}
 			if (keys[Controls.Right]) {
-				v.x += 0.1 * SCALE * delta;
+				v.x++;
 			}
-			mesh.position.add(v.normalize().multiplyScalar(0.05));
+			mesh.position.add(v.normalize().multiplyScalar(speed * SCALE * delta));
 		}
 	});
 
@@ -185,7 +198,7 @@ class Game extends React.Component<Props, State> {
 			)(Controls);
 		this.api = withContext(ctx);
 		this.tickables.push(otherSpawner());
-		this.tickables.push(cameraControls());
+		this.tickables.push(twinstickCamera());
 
 		this.state = {
 			api: this.api,

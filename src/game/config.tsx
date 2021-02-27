@@ -10,6 +10,7 @@ export const Controls = {
 	Left: 'KeyA',
 	Right: 'KeyD',
 	Spawn: 'Space',
+	Boost: 'ShiftLeft',
 
 	// Camera
 	CameraUp: 'ArrowUp',
