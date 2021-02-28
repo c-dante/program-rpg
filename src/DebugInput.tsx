@@ -1,6 +1,8 @@
 import fp from 'lodash/fp';
+import React from 'react';
 import { Fragment } from 'react';
 import { useRaf } from 'react-use';
+import { XboxButtonMap, XboxButtons } from './game/controllers/xbox';
 import { globalInputs, keyBuffer } from './game/InputContext';
 
 const Axis = ({ x, y, radius, innerRadius = radius / 6 }) => (
@@ -9,6 +11,42 @@ const Axis = ({ x, y, radius, innerRadius = radius / 6 }) => (
 		<circle cx={radius + x*(radius - innerRadius)} cy={radius + y*(radius - innerRadius)} r={innerRadius} fill='red' />
 	</svg>
 );
+
+interface GamepadButtonsProps {
+	gamepad: Gamepad;
+}
+interface GamepadButtonsState {
+	index: number;
+	mapping: Record<number, XboxButtons>;
+}
+class GamepadButtons extends React.Component<GamepadButtonsProps, GamepadButtonsState> {
+	constructor(props) {
+		super(props);
+
+		this.state = {
+			index: props.gamepad.index,
+			mapping: { ...XboxButtonMap },
+		};
+	}
+
+	componentDidUpdate(prevProps) {
+		if (prevProps.gamepad.index !== this.state.index) {
+			console.warn('Oh no, swapped gamepads!');
+		}
+	}
+
+	render() {
+		return (
+			<div>
+				{this.props.gamepad.buttons.map((btn, idx) => (
+					<div key={idx}>
+						({idx}) {this.state.mapping[idx]} {btn.pressed} - {btn.touched} - {btn.value}
+					</div>
+				))}
+			</div>
+		);
+	}
+}
 
 const DebugInput = () => {
 	useRaf(1e11); // 1e12 fails on mine
@@ -60,11 +98,9 @@ const DebugInput = () => {
 							<td>{fp.chunk(2, gamepad.axes).map(([x, y], index) => (
 								<Axis x={x} y={y} radius={25} key={index} />
 							))}</td>
-							<td>{gamepad.buttons.map((btn, idx) => (
-								<div key={idx}>
-									{btn.pressed} - {btn.touched} - {btn.value}
-								</div>
-							))}</td>
+							<td>
+								<GamepadButtons gamepad={gamepad} />
+							</td>
 							<td>{String(gamepad.connected)}</td>
 							<td>{gamepad.mapping}</td>
 							<td>{gamepad.timestamp}</td>
