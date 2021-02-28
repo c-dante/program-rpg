@@ -2,7 +2,7 @@ import React from 'react';
 import './App.css';
 import DebugInput from './DebugInput';
 import Game from './game/Game';
-import { ProvideInput } from './game/InputContext';
+import { HookInputs } from './game/InputContext';
 
 const Header = () => (
 	<div>
@@ -22,10 +22,9 @@ function App() {
 	return (
 		<div className="flex-column padded fill">
 			<Header />
-			<ProvideInput>
-				<DebugInput />
-				<Game />
-			</ProvideInput>
+			<HookInputs />
+			<DebugInput />
+			<Game />
 		</div>
 	);
 }

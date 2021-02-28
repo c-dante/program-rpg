@@ -31,6 +31,10 @@ div {
 	position: relative;
 }
 
+canvas {
+	/* Capture touch on canvas only */
+	touch-action: none;
+}
 
 /* ----- */
 
