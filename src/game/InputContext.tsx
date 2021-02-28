@@ -3,10 +3,33 @@ import fp from 'lodash/fp';
 export type Key = { at: number, code: string, down: boolean };
 export type Pointer = { at: number, id: number, down: boolean, x: number, y: number };
 
+// Buffered inputs for event based stuff
 export type Inputs = {
 	keys: Record<string, Key>,
 	pointers: Record<number, Pointer>,
 	gamepads: Gamepad[],
+};
+
+const PRESS_WINDOW_MS = 500; // ms to see a "down-up" event as a button press
+
+type GamepadId = string;
+
+let localKeyBuffer: Key[] = [];
+export const keyBuffer: Key[] = [];
+const bufferKeyDown = (key: Key) => {
+	// Drop keys outside of buffer window + duplicate buffered keys (we'll just re-queue)
+	localKeyBuffer = localKeyBuffer.filter(x => key.code !== x.code && key.at - x.at < PRESS_WINDOW_MS);
+	// Add my key
+	localKeyBuffer.push(key);
+};
+const bufferKeyUp = ({ at, code }: Key) => {
+	localKeyBuffer = localKeyBuffer.filter(x => {
+		if (x.code === code && at - x.at < PRESS_WINDOW_MS) {
+			keyBuffer.push(x);
+		}
+
+		return x.code !== code && at - x.at < PRESS_WINDOW_MS;
+	});
 };
 
 export const globalInputs: Inputs = {
@@ -14,6 +37,8 @@ export const globalInputs: Inputs = {
 	pointers: {},
 	gamepads: [],
 };
+
+export const getGamepadId = ({ id, index }: Gamepad): GamepadId => `${id}|${index}`;
 
 // Chrome only snapshots and only emits these events -- using the getGamepads() globally for now instead of watching connect/disconnect
 let _frameId = 0;
@@ -36,10 +61,16 @@ export const HookInputs = () => {
 	console.log('Register input listeners');
 	// Window events in the mount/unmount sections for live reload and whatnot
 	const _onKeyUp = (evt: KeyboardEvent) => {
-		globalInputs.keys[evt.code] = { code: evt.code, down: true, at: evt.timeStamp };
+		if (globalInputs.keys[evt.code]?.down !== false) {
+			globalInputs.keys[evt.code] = { code: evt.code, down: false, at: evt.timeStamp };
+			bufferKeyUp(globalInputs.keys[evt.code]);
+		}
 	};
 	const _onKeyDown = (evt: KeyboardEvent) => {
-		globalInputs.keys[evt.code] = { code: evt.code, down: false, at: evt.timeStamp };
+		if (globalInputs.keys[evt.code]?.down !== true) {
+			globalInputs.keys[evt.code] = { code: evt.code, down: true, at: evt.timeStamp };
+			bufferKeyDown(globalInputs.keys[evt.code]);
+		}
 	};
 	const _onPointerDown = (evt: PointerEvent) => {
 		globalInputs.pointers[evt.pointerId] = { id: evt.pointerId, down: true, x: evt.pageX, y: evt.pageY, at: evt.timeStamp };

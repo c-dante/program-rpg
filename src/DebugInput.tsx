@@ -1,5 +1,6 @@
+import { Fragment } from 'react';
 import { useRaf } from 'react-use';
-import { globalInputs } from './game/InputContext';
+import { globalInputs, keyBuffer } from './game/InputContext';
 
 const DebugInput = () => {
 	useRaf(1e11); // 1e12 fails on mine
@@ -63,6 +64,27 @@ const DebugInput = () => {
 			</table>
 
 			<h4>Keyboard</h4>
+			<div>
+				Buffered Keys
+				<table>
+					<tbody>
+					<tr>
+						{keyBuffer.map((key) => (
+							<Fragment key={key.at}>
+								<td>{key.code}</td>
+							</Fragment>
+						))}
+					</tr>
+					<tr>
+						{keyBuffer.map((key) => (
+							<Fragment key={key.at}>
+								<td>{key.at}</td>
+							</Fragment>
+						))}
+					</tr>
+					</tbody>
+				</table>
+			</div>
 			<table>
 				<thead>
 					<tr>
