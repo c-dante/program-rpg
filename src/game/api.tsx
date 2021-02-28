@@ -1,7 +1,7 @@
-import fp from "lodash/fp";
-import { BoxGeometry, Mesh, MeshBasicMaterial, Raycaster } from "three";
-import { Actor, Context, makeActor, Tick } from "./actor";
-import { Colors, SCALE } from "./config";
+import fp from 'lodash/fp';
+import { BoxGeometry, Mesh, MeshBasicMaterial, Raycaster } from 'three';
+import { Actor, Context, makeActor, Tick } from './actor';
+import { Colors, SCALE } from './config';
 
 export const makeBox = (color = Colors.Purple) => new Mesh(
 	new BoxGeometry(),
