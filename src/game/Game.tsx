@@ -17,6 +17,8 @@ import vertShader from './shaders/test-vert';
 import fragShader from './shaders/test-frag';
 import { Spell, spellBook, spellCaster } from './magic';
 
+const DEADZONE = 0.15;
+
 
 const makeOther = (api: ContextApi) => {
 	// Make the other near the player
@@ -96,6 +98,15 @@ const setUpScene = (api: ContextApi) => {
 			}
 			if (globalInputs.keys[Controls.Right]?.down) {
 				v.x++;
+			}
+
+			// Move around _with sticks_
+			if (globalInputs.gamepads?.[0]?.axes) {
+				const [moveX, moveY] = globalInputs.gamepads?.[0]?.axes;
+				if ((moveX * moveX + moveY * moveY) >= DEADZONE) {
+					v.x = moveX;
+					v.y = -moveY;
+				}
 			}
 			mesh.position.add(v.normalize().multiplyScalar(speed * SCALE * delta));
 		}
