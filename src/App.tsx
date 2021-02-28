@@ -1,6 +1,8 @@
 import React from 'react';
 import './App.css';
+import DebugInput from './DebugInput';
 import Game from './game/Game';
+import { ProvideInput } from './game/InputContext';
 
 const Header = () => (
 	<div>
@@ -20,7 +22,10 @@ function App() {
 	return (
 		<div className="flex-column padded fill">
 			<Header />
-			<Game />
+			<ProvideInput>
+				<DebugInput />
+				<Game />
+			</ProvideInput>
 		</div>
 	);
 }
