@@ -1,3 +1,4 @@
+/* Layout */
 .fill {
   position: absolute;
   top: 0;
@@ -40,10 +41,23 @@
   overflow: hidden;
 }
 
+/* Typography */
+.text-big {
+	font-size: 1.2em;
+}
+
+.text-mid {
+	font-size: 0.9em;
+}
+
+.text-small {
+	font-size: 0.8em;
+}
 
 
 
-/* code window classes */
+
+/* Component-specific */
 .pause-overlay {
   pointer-events: none;
 }

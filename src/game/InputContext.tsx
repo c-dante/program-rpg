@@ -10,7 +10,7 @@ export type Inputs = {
 	gamepads: Gamepad[],
 };
 
-const PRESS_WINDOW_MS = 500; // ms to see a "down-up" event as a button press
+const PRESS_WINDOW_MS = 175; // ms to see a "down-up" event as a button press
 
 type GamepadId = string;
 
@@ -42,8 +42,11 @@ export const getGamepadId = ({ id, index }: Gamepad): GamepadId => `${id}|${inde
 
 // Chrome only snapshots and only emits these events -- using the getGamepads() globally for now instead of watching connect/disconnect
 let _frameId = 0;
-const rafLoop = () => {
+const rafLoop = (time) => {
 	globalInputs.gamepads = [...navigator.getGamepads()].filter(fp.identity) as Gamepad[];
+	while (keyBuffer.length && time - keyBuffer[0].at > 1000) {
+		keyBuffer.pop();
+	}
 	_frameId = window.requestAnimationFrame(rafLoop);
 };
 

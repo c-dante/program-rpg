@@ -1,23 +1,31 @@
+import fp from 'lodash/fp';
 import { Fragment } from 'react';
 import { useRaf } from 'react-use';
 import { globalInputs, keyBuffer } from './game/InputContext';
+
+const Axis = ({ x, y, radius, innerRadius = radius / 6 }) => (
+	<svg version="1.1" width={radius * 2} height={radius * 2}>
+		<circle cx={radius} cy={radius} r={radius} />
+		<circle cx={radius + x*(radius - innerRadius)} cy={radius + y*(radius - innerRadius)} r={innerRadius} fill='red' />
+	</svg>
+);
 
 const DebugInput = () => {
 	useRaf(1e11); // 1e12 fails on mine
 
 	return (
-		<div>
+		<div className="text-small">
 			<h3>Debug Inputs</h3>
 
 			<h4>Pointers</h4>
 			<table>
 				<thead>
 					<tr>
-						<td>ID</td>
-						<td>Down</td>
+						<td>id</td>
+						<td>down</td>
 						<td>x</td>
 						<td>y</td>
-						<td>At</td>
+						<td>at</td>
 					</tr>
 				</thead>
 				<tbody>
@@ -49,13 +57,15 @@ const DebugInput = () => {
 					{globalInputs.gamepads.map((gamepad) => (
 						<tr key={gamepad.id}>
 							<td>{gamepad.id}</td>
-							<td>{gamepad.axes.join(', ')}</td>
+							<td>{fp.chunk(2, gamepad.axes).map(([x, y], index) => (
+								<Axis x={x} y={y} radius={25} key={index} />
+							))}</td>
 							<td>{gamepad.buttons.map((btn, idx) => (
 								<div key={idx}>
 									{btn.pressed} - {btn.touched} - {btn.value}
 								</div>
 							))}</td>
-							<td>{gamepad.connected}</td>
+							<td>{String(gamepad.connected)}</td>
 							<td>{gamepad.mapping}</td>
 							<td>{gamepad.timestamp}</td>
 						</tr>

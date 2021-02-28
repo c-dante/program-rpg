@@ -35,17 +35,3 @@ canvas {
 	/* Capture touch on canvas only */
 	touch-action: none;
 }
-
-/* ----- */
-
-.text-big {
-	font-size: 1.2em;
-}
-
-.text-mid {
-	font-size: 0.9em;
-}
-
-.text-small {
-	font-size: 0.8em;
-}
