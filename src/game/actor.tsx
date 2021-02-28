@@ -1,5 +1,6 @@
 import fp from 'lodash/fp';
 import type { Renderer, Scene, Camera, Mesh, Intersection } from 'three';
+import { Inputs, globalInputs } from './InputContext';
 
 export type TimeStep = {
 	time: number,
@@ -24,9 +25,8 @@ export interface Actor extends Tickable, Named, Tagged {
 };
 
 export type GameInput = {
-	keys: Record<string, boolean>,
+	globalInputs: Inputs,
 	mouse: {
-		down: boolean,
 		x: number,
 		y: number,
 	}
@@ -55,7 +55,7 @@ export const makeContext = ({
 	scene,
 	actors = [],
 	bb = {
-		input: { keys: {}, mouse: { down: false, x: 0, y: 0 }}
+		input: { globalInputs, mouse: { x: 0, y: 0 }}
 	},
 	targets = [],
 }: Partial<Context> & Pick<Context, 'camera' | 'scene' | 'renderer'>): Context => ({

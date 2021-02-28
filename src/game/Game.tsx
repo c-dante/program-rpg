@@ -51,8 +51,8 @@ const makeOther = (api: ContextApi) => {
 const otherSpawner = () => {
 	let lastSpawn = Date.now();
 	return (api: ContextApi) => {
-		const keys = api.ctx.bb.input.keys;
-		if (keys[Controls.Spawn] && Date.now() - lastSpawn >= 250) {
+		const { keys } = api.ctx.bb.input.globalInputs;
+		if (keys[Controls.Spawn]?.down && Date.now() - lastSpawn >= 250) {
 			lastSpawn = Date.now();
 			makeOther(api);
 		}
@@ -82,19 +82,19 @@ const setUpScene = (api: ContextApi) => {
 			mesh.rotation.y += 0.01;
 
 			// Move around
-			const keys = ctx.bb.input.keys;
+			const { globalInputs } = ctx.bb.input;
 			const v = new Vector3();
-			const speed = keys[Controls.Boost] ? 0.2 : 0.1;
-			if (keys[Controls.Up]) {
+			const speed = globalInputs.keys[Controls.Boost]?.down ? 0.2 : 0.1;
+			if (globalInputs.keys[Controls.Up]?.down) {
 				v.y++;
 			}
-			if (keys[Controls.Down]) {
+			if (globalInputs.keys[Controls.Down]?.down) {
 				v.y--;
 			}
-			if (keys[Controls.Left]) {
+			if (globalInputs.keys[Controls.Left]?.down) {
 				v.x--;
 			}
-			if (keys[Controls.Right]) {
+			if (globalInputs.keys[Controls.Right]?.down) {
 				v.x++;
 			}
 			mesh.position.add(v.normalize().multiplyScalar(speed * SCALE * delta));
@@ -154,7 +154,6 @@ class Game extends React.Component<Props, State> {
 
 	_time: number = 0;
 	_frameId: number = 0;
-	_unregister: () => void = fp.noop;
 
 	constructor(props) {
 		super(props);
@@ -170,10 +169,6 @@ class Game extends React.Component<Props, State> {
 		this.containerRef = createRef<HTMLDivElement>();
 		ctx.renderer.setSize(width, height);
 		ctx.camera.position.z = PLANE_Z;
-		ctx.bb.input.keys = fp.flow(
-				fp.invert,
-				fp.mapValues(fp.constant(false))
-			)(Controls);
 		this.api = withContext(ctx);
 		this.tickables.push(otherSpawner());
 		this.tickables.push(twinstickCamera());
@@ -189,39 +184,6 @@ class Game extends React.Component<Props, State> {
 	}
 
 	componentDidMount() {
-		// Window events in the mount/unmount sections for live reload and whatnot
-		const _onKeyUp = (evt: KeyboardEvent) => {
-			this.api.ctx.bb.input.keys[evt.code] = false;
-		}
-		const _onKeyDown = (evt: KeyboardEvent) => {
-			this.api.ctx.bb.input.keys[evt.code] = true;
-		}
-		const _onMouseDown = (evt: MouseEvent) => {
-			this.api.ctx.bb.input.mouse.down = true;
-		}
-		const _onMouseUp = (evt: MouseEvent) => {
-			this.api.ctx.bb.input.mouse.down = false;
-		}
-		const _onMouseMove = (evt: MouseEvent) => {
-			// Relative to center of render, +y is up
-			const { x, y, width, height } = this.api.ctx.renderer.domElement.getBoundingClientRect();
-			this.api.ctx.bb.input.mouse.x = ((evt.clientX - width / 2) - x) / width * 2;
-			this.api.ctx.bb.input.mouse.y = (-((evt.clientY - height / 2) - y)) / height * 2;
-		}
-
-		window.addEventListener('keyup', _onKeyUp);
-		window.addEventListener('keydown', _onKeyDown);
-		window.addEventListener('mousedown', _onMouseDown);
-		window.addEventListener('mouseup', _onMouseUp);
-		window.addEventListener('mousemove', _onMouseMove);
-		this._unregister = () => {
-			window.removeEventListener('keyup', _onKeyUp);
-			window.removeEventListener('keydown', _onKeyDown);
-			window.removeEventListener('mousedown', _onMouseDown);
-			window.removeEventListener('mouseup', _onMouseUp);
-			window.removeEventListener('mousemove', _onMouseMove);
-		};
-
 		// ---- Mount Init ----- //
 		this.containerRef.current?.appendChild(this.api.ctx.renderer.domElement);
 		setUpScene(this.api);
@@ -231,7 +193,6 @@ class Game extends React.Component<Props, State> {
 
 	componentWillUnmount() {
 		this.pause();
-		this._unregister();
 	}
 
 	play() {
@@ -253,6 +214,14 @@ class Game extends React.Component<Props, State> {
 		if (!this.state.paused) {
 			this._frameId = window.requestAnimationFrame(() => this.tick());
 			const timeStep = { time: this._frameId, delta: 1 };
+
+			// Transform mouse into game space
+			if (this.api.ctx.bb.input.globalInputs.pointers[1]) {
+				const { x, y, width, height } = this.api.ctx.renderer.domElement.getBoundingClientRect();
+				const { x: clientX, y: clientY } = this.api.ctx.bb.input.globalInputs.pointers[1];
+				this.api.ctx.bb.input.mouse.x = ((clientX - width / 2) - x) / width * 2;
+				this.api.ctx.bb.input.mouse.y = - ((clientY - height / 2) - y) / height * 2;
+			}
 
 			// Get objects under mouse
 			this.api.raycaster.setFromCamera(

@@ -76,17 +76,17 @@ export const HookInputs = () => {
 		}
 	};
 	const _onPointerDown = (evt: PointerEvent) => {
-		globalInputs.pointers[evt.pointerId] = { id: evt.pointerId, down: true, x: evt.pageX, y: evt.pageY, at: evt.timeStamp };
+		globalInputs.pointers[evt.pointerId] = { id: evt.pointerId, down: true, x: evt.clientX, y: evt.clientY, at: evt.timeStamp };
 	};
 	const _onPointerUp = (evt: PointerEvent) => {
-		globalInputs.pointers[evt.pointerId] = { id: evt.pointerId, down: false, x: evt.pageX, y: evt.pageY, at: evt.timeStamp };
+		globalInputs.pointers[evt.pointerId] = { id: evt.pointerId, down: false, x: evt.clientX, y: evt.clientY, at: evt.timeStamp };
 	};
 	const _onPointerMove = (evt: PointerEvent) => {
 		if (!globalInputs.pointers[evt.pointerId]) {
-			globalInputs.pointers[evt.pointerId] = { id: evt.pointerId, down: false, x: evt.pageX, y: evt.pageY, at: evt.timeStamp };
+			globalInputs.pointers[evt.pointerId] = { id: evt.pointerId, down: false, x: evt.clientX, y: evt.clientY, at: evt.timeStamp };
 		}
-		globalInputs.pointers[evt.pointerId].x = evt.pageX;
-		globalInputs.pointers[evt.pointerId].y = evt.pageY;
+		globalInputs.pointers[evt.pointerId].x = evt.clientX;
+		globalInputs.pointers[evt.pointerId].y = evt.clientY;
 		globalInputs.pointers[evt.pointerId].at = evt.timeStamp;
 	};
 

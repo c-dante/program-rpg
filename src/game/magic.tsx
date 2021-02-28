@@ -64,7 +64,7 @@ export const spellCaster = (spellLogic: Spell = spellBook[0]) => {
 		if (
 			api.ctx.targeting
 			&& api.ctx.bb.player
-			&& api.ctx.bb.input.mouse.down
+			&& api.ctx.bb.input.globalInputs.pointers?.[1]?.down
 			&& time - last >= cooldown
 		) {
 			last = time;
