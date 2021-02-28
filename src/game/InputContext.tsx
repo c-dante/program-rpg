@@ -10,6 +10,10 @@ export type Inputs = {
 	gamepads: Gamepad[],
 };
 
+export const AXIS_DEADZONE = 0.15;
+
+export const axisPastDeadzone = (x, y, deadzone = AXIS_DEADZONE) => (x*x + y*y) > deadzone
+
 const PRESS_WINDOW_MS = 175; // ms to see a "down-up" event as a button press
 
 type GamepadId = string;

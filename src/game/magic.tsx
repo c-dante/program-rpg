@@ -2,6 +2,7 @@ import { BoxGeometry, Mesh, MeshBasicMaterial, Vector3, Spherical } from 'three'
 import { TimeStep } from './actor';
 import { ContextApi } from './api';
 import { SCALE, Colors, Tag } from './config';
+import { axisPastDeadzone } from './InputContext';
 
 const SpellEnv = {
 	Vector3,
@@ -61,20 +62,34 @@ export const spellCaster = (spellLogic: Spell = spellBook[0]) => {
 	const cooldown = 20;
 	let last = 0;
 	return (api: ContextApi, { time }: TimeStep) => {
+		const [axisX, axisY] = api.ctx.bb.input.globalInputs.gamepads?.[0]?.axes?.slice(2) ?? [0, 0];
+		const useAxis = axisPastDeadzone(axisX, axisY);
 		if (
 			api.ctx.targeting
 			&& api.ctx.bb.player
-			&& api.ctx.bb.input.globalInputs.pointers?.[1]?.down
+			&& (
+				api.ctx.bb.input.globalInputs.pointers?.[1]?.down
+				|| useAxis
+			)
 			&& time - last >= cooldown
 		) {
 			last = time;
 
 			const entityLogic = invokeNewSpell(spellLogic.fn);
-			const target = api.ctx.targeting.point.clone().setZ(0);
-			const origin = api.ctx.bb.player.mesh.position.clone().setZ(0);
-			const velocity = target.sub(origin)
-					.normalize()
-					.multiplyScalar(0.05 * SCALE);
+			const velocity = (() => {
+				if (useAxis) {
+					return new Vector3(axisX, -axisY);
+				}
+
+				const target = api.ctx.targeting.point.clone().setZ(0);
+				const origin = api.ctx.bb.player.mesh.position.clone().setZ(0);
+				return target.sub(origin);
+			})();
+
+			// Normalize the velocity
+			velocity
+				.normalize()
+				.multiplyScalar(0.05 * SCALE);
 
 			api.makeEntity({
 				x: api.ctx.bb.player.mesh.position.x,

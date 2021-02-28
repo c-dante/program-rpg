@@ -16,8 +16,7 @@ import CodeWindow from './CodeWindow';
 import vertShader from './shaders/test-vert';
 import fragShader from './shaders/test-frag';
 import { Spell, spellBook, spellCaster } from './magic';
-
-const DEADZONE = 0.15;
+import { axisPastDeadzone } from './InputContext';
 
 
 const makeOther = (api: ContextApi) => {
@@ -103,7 +102,7 @@ const setUpScene = (api: ContextApi) => {
 			// Move around _with sticks_
 			if (globalInputs.gamepads?.[0]?.axes) {
 				const [moveX, moveY] = globalInputs.gamepads?.[0]?.axes;
-				if ((moveX * moveX + moveY * moveY) >= DEADZONE) {
+				if (axisPastDeadzone(moveX, + moveY)) {
 					v.x = moveX;
 					v.y = -moveY;
 				}
