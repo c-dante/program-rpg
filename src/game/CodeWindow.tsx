@@ -70,7 +70,10 @@ class SpellEditor extends React.Component<Props, State> {
 	}
 }
 
-const DebugInputTable = ({ input }) => (
+interface DebugInputTableProps {
+	input: GameInput;
+}
+const DebugInputTable = ({ input }: DebugInputTableProps) => (
 	<div className="text-small">
 		<table>
 			<colgroup>
@@ -81,7 +84,7 @@ const DebugInputTable = ({ input }) => (
 			<tbody>
 				<tr>
 					<td>Mouse</td>
-					<td colSpan={2}>{input.mouse.down ? 'down' : 'up'}</td>
+					<td colSpan={2}>{input.globalInputs.pointers?.[0]?.down ? 'down' : 'up'}</td>
 				</tr>
 				<tr>
 					<td></td>
@@ -92,7 +95,7 @@ const DebugInputTable = ({ input }) => (
 					<tr key={key}>
 						<td>{key}</td>
 						<td>{Controls[key]}</td>
-						<td>{input.keys[Controls[key]] ? 'down' : 'up'}</td>
+						<td>{input.globalInputs.keys[Controls[key]] ? 'down' : 'up'}</td>
 					</tr>
 				))}
 			</tbody>

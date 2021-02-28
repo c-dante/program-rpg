@@ -31,17 +31,11 @@ div {
 	position: relative;
 }
 
-
-/* ----- */
-
-.text-big {
-	font-size: 1.2em;
+p {
+	margin: 0 0 0.5em 0;
 }
 
-.text-mid {
-	font-size: 0.9em;
-}
-
-.text-small {
-	font-size: 0.8em;
+canvas {
+	/* Capture touch on canvas only */
+	touch-action: none;
 }
