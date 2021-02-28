@@ -1,8 +1,9 @@
 import React from 'react';
+import { useLifecycles } from 'react-use';
 import './App.css';
 import DebugInput from './DebugInput';
 import Game from './game/Game';
-import { HookInputs } from './game/InputContext';
+import { HookInputs, UnhookInputs } from './game/InputContext';
 
 const Header = () => (
 	<div>
@@ -19,10 +20,10 @@ const Header = () => (
 
 
 function App() {
+	useLifecycles(HookInputs, UnhookInputs);
 	return (
 		<div className="flex-column padded fill">
 			<Header />
-			<HookInputs />
 			<DebugInput />
 			<Game />
 		</div>
