@@ -16,6 +16,13 @@ const randomPointNear = (
 	)
 );
 
+function addAllMut<T>(self: Set<T>, from: Iterable<T>): Set<T> {
+	for (const elt of from) {
+		self.add(elt);
+	}
+	return self;
+}
+
 export const makeOther = (
 	api: ContextApi,
 	entityProps: Partial<MakeEntityProps> = {},
@@ -25,12 +32,16 @@ export const makeOther = (
 		? fp.pick(['x', 'y'], entityProps)
 		: randomPointNear(api.ctx.bb.player?.mesh?.position ?? new Vector3(), 10, 2);
 
-
+	const {
+		tags = new Set(),
+		...pass
+	} = entityProps;
 	api.makeEntity({
+		tags: addAllMut(new Set([Tag.Other]), tags),
+
 		x: origin.x,
 		y: origin.y,
 		mesh: makeBox(Colors.Red),
-		tags: new Set([Tag.Other]),
 		name: 'some-enemy',
 		tick(ctx, _, { mesh }) {
 			mesh.rotation.x += 0.01;
@@ -48,7 +59,7 @@ export const makeOther = (
 		},
 
 		// And override
-		...entityProps,
+		...pass,
 	});
 };
 
@@ -76,6 +87,7 @@ export const spawner = ({
 			makeOther(api, {
 				x,
 				y,
+				tags: spawnTags,
 			});
 			lastSpawn = time.time;
 		}

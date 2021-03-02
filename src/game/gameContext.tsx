@@ -15,7 +15,7 @@ export interface Named {
 	name: string;
 }
 export interface Tagged {
-	tags: Set<String>;
+	tags: Set<string>;
 }
 
 export interface Actor extends Tickable, Named, Tagged {

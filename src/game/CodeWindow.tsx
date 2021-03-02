@@ -11,7 +11,7 @@ import fp from 'lodash/fp';
 import { compileSpell, Spell } from './magic';
 
 export interface Props {
-	source?: String;
+	source?: string;
 	onChange: (source: string) => void;
 	onFocus: () => void;
 	onBlur: () => void;
