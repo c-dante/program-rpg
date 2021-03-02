@@ -6,7 +6,7 @@ import CodeMirror from 'codemirror';
 import type { Intersection } from 'three';
 
 import { Controls } from './config';
-import { GameInput } from './actor';
+import { GameInput } from './gameContext';
 import fp from 'lodash/fp';
 import { compileSpell, Spell } from './magic';
 

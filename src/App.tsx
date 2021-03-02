@@ -3,7 +3,7 @@ import { useLifecycles } from 'react-use';
 import './App.css';
 import DebugInput from './DebugInput';
 import Game from './game/Game';
-import { HookInputs, UnhookInputs } from './game/InputContext';
+import { HookInputs, UnhookInputs } from './game/inputs/globalContext';
 
 const Header = () => (
 	<div>
