@@ -12,6 +12,7 @@ import { Colors, Controls, PLANE_Z, SCALE, Tag } from './config';
 import { makeContext, TimeStep } from './gameContext';
 import { ContextApi, makeBox, withContext } from './api';
 import CodeWindow from './CodeWindow';
+import * as ai from './ai';
 
 import vertShader from './shaders/test-vert';
 import { Spell, spellBook, spellCaster } from './magic';
@@ -57,8 +58,8 @@ const otherSpawner = () => {
 			lastSpawn = Date.now();
 			makeOther(api);
 		}
-	}
-}
+	};
+};
 
 const twinstickCamera = () => (api: ContextApi) => {
 	if (api.ctx.bb.player?.mesh.position) {
@@ -67,10 +68,10 @@ const twinstickCamera = () => (api: ContextApi) => {
 		if (api.ctx.camera.position.distanceTo(target) < 0.1) {
 			api.ctx.camera.position.copy(target);
 		} else {
-			api.ctx.camera.position.lerp(target, 0.1)
+			api.ctx.camera.position.lerp(target, 0.1);
 		}
 	}
-}
+};
 
 const setUpScene = (api: ContextApi) => {
 	// Player stuff
@@ -142,7 +143,7 @@ const setUpScene = (api: ContextApi) => {
 	api.ctx.scene.add(targeting);
 
 	return api;
-}
+};
 
 export interface Props {}
 
@@ -181,6 +182,7 @@ class Game extends React.Component<Props, State> {
 		ctx.camera.position.z = PLANE_Z;
 		this.api = withContext(ctx);
 		this.tickables.push(otherSpawner());
+		this.tickables.push(ai.spawner());
 		this.tickables.push(twinstickCamera());
 
 		this.state = {

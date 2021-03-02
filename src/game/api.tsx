@@ -1,6 +1,6 @@
 import fp from 'lodash/fp';
 import { BoxGeometry, Mesh, MeshBasicMaterial, Raycaster } from 'three';
-import { Actor, Context, makeActor, Tick } from './gameContext';
+import { Actor, Context, makeActor, Tick, TimeStep } from './gameContext';
 import { Colors, SCALE } from './config';
 
 export const makeBox = (color = Colors.Purple) => new Mesh(
@@ -50,7 +50,7 @@ const disposeMesh = (mesh: Mesh): void => {
 	} else {
 		mesh.material.dispose();
 	}
-}
+};
 
 export const removeByTags = (
 	ctx: Context,
@@ -97,7 +97,8 @@ export interface ContextApi {
 	readonly remove: (actor: Actor) => void;
 	readonly removeAll: (actor: Actor[]) => void;
 	readonly removeByTags: (tags: string[]) => void;
-}
+};
+
 export const withContext = (ctx: Context): ContextApi => ({
 	ctx,
 	raycaster: new Raycaster(),
@@ -106,3 +107,5 @@ export const withContext = (ctx: Context): ContextApi => ({
 	removeAll: fp.partial(removeAll, [ctx]),
 	removeByTags: fp.partial(removeByTags, [ctx]),
 });
+
+export type AppTick = (api: ContextApi, step: TimeStep) => void;
