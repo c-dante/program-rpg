@@ -1,7 +1,7 @@
 import fp from 'lodash/fp';
 import { BoxGeometry, Mesh, MeshBasicMaterial, Raycaster } from 'three';
 import { Actor, Context, makeActor, Tick, TimeStep } from './gameContext';
-import { Colors, SCALE } from './config';
+import { Colors } from './config';
 
 export const makeBox = (color = Colors.Purple) => new Mesh(
 	new BoxGeometry(),
@@ -29,7 +29,6 @@ export const makeEntity = (
 ): Actor => {
 	mesh.position.x = x;
 	mesh.position.y = y;
-	mesh.scale.multiplyScalar(SCALE);
 	scene.add(mesh);
 
 	const entity = makeActor({

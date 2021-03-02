@@ -3,8 +3,8 @@ import type { Renderer, Scene, Camera, Mesh, Intersection } from 'three';
 import { Inputs, globalInputs } from './inputs/globalContext';
 
 export type TimeStep = {
-	time: number,
-	delta: number,
+	time: number, // in performance.now()
+	delta: number, // since last tick time
 }
 
 export type Tick = (ctx: Context, step: TimeStep, self: Actor) => void;

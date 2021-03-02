@@ -59,7 +59,7 @@ return (delta, position, velocity) => {
 ];
 
 export const spellCaster = (spellLogic: Spell = spellBook[0]) => {
-	const cooldown = 20;
+	const cooldown = 100;
 	let last = 0;
 	return (api: ContextApi, { time }: TimeStep) => {
 		const [axisX, axisY] = api.ctx.bb.input.globalInputs.gamepads?.[0]?.axes?.slice(2) ?? [0, 0];

@@ -38,7 +38,7 @@ const makeOther = (api: ContextApi) => {
 			mesh.rotation.y += 0.01;
 
 			// Walk toward cube
-			const speed = 0.01 * SCALE;
+			const speed = 0.1 * SCALE;
 			if (ctx.bb.player && mesh.position.distanceTo(ctx.bb.player.mesh.position) > speed) {
 				const v = ctx.bb.player.mesh.position.clone()
 					.sub(mesh.position)
@@ -86,7 +86,9 @@ const setUpScene = (api: ContextApi) => {
 			// Move around
 			const { globalInputs } = ctx.bb.input;
 			const v = new Vector3();
-			const speed = globalInputs.keys[Controls.Boost]?.down ? 0.2 : 0.1;
+
+			// In units / millie
+			const speed = 0.12 * (globalInputs.keys[Controls.Boost]?.down ? 2 : 1);
 			if (globalInputs.keys[Controls.Up]?.down) {
 				v.y++;
 			}
@@ -108,7 +110,10 @@ const setUpScene = (api: ContextApi) => {
 					v.y = -moveY;
 				}
 			}
-			mesh.position.add(v.normalize().multiplyScalar(speed * SCALE * delta));
+			mesh.position.add(v
+				.normalize()
+				.multiplyScalar(speed * SCALE * delta)
+			);
 		}
 	});
 
@@ -209,7 +214,8 @@ class Game extends React.Component<Props, State> {
 
 	play() {
 		if (this.state.paused) {
-			this._frameId = window.requestAnimationFrame(() => this.tick());
+			this._time = performance.now();
+			this._frameId = window.requestAnimationFrame((t) => this.tick(t));
 			this.setState({ paused: false });
 		}
 	}
@@ -222,10 +228,14 @@ class Game extends React.Component<Props, State> {
 		}
 	}
 
-	tick() {
+	tick(atTime: number) {
 		if (!this.state.paused) {
-			this._frameId = window.requestAnimationFrame(() => this.tick());
-			const timeStep = { time: this._frameId, delta: 1 };
+			this._frameId = window.requestAnimationFrame((t) => this.tick(t));
+			const timeStep: TimeStep = {
+				time: atTime,
+				delta: atTime - this._time,
+			};
+			this._time = atTime;
 
 			// Transform mouse into game space
 			if (this.api.ctx.bb.input.globalInputs.pointers[1]) {
