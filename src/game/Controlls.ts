@@ -1,6 +1,6 @@
 import { Vector3 } from 'three';
 
-import { TimeStep } from './actor';
+import { TimeStep } from './gameContext';
 import { ContextApi } from './api';
 import { Controls, SCALE } from './config';
 

@@ -1,5 +1,5 @@
 import { BoxGeometry, Mesh, MeshBasicMaterial, Vector3, Spherical } from 'three';
-import { TimeStep } from './actor';
+import { TimeStep } from './gameContext';
 import { ContextApi } from './api';
 import { SCALE, Colors, Tag } from './config';
 import { axisPastDeadzone } from './inputs/globalContext';

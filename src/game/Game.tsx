@@ -9,13 +9,13 @@ import {
 import fp from 'lodash/fp';
 
 import { Colors, Controls, PLANE_Z, SCALE, Tag } from './config';
-import { makeContext, TimeStep } from './actor';
+import { makeContext, TimeStep } from './gameContext';
 import { ContextApi, makeBox, withContext } from './api';
 import CodeWindow from './CodeWindow';
 
 import vertShader from './shaders/test-vert';
-import fragShader from './shaders/test-frag';
 import { Spell, spellBook, spellCaster } from './magic';
+import fragShader from './shaders/test-frag';
 import { axisPastDeadzone } from './inputs/globalContext';
 
 
