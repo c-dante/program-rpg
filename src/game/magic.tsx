@@ -30,7 +30,7 @@ export const compileSpell = (incantation: string) => {
 		source: incantation,
 		fn,
 	};
-}
+};
 
 export const spellBook: Spell[] = [
 	compileSpell(
@@ -59,7 +59,7 @@ return (delta, position, velocity) => {
 ];
 
 export const spellCaster = (spellLogic: Spell = spellBook[0]) => {
-	const cooldown = 20;
+	const cooldown = 100;
 	let last = 0;
 	return (api: ContextApi, { time }: TimeStep) => {
 		const [axisX, axisY] = api.ctx.bb.input.globalInputs.gamepads?.[0]?.axes?.slice(2) ?? [0, 0];
@@ -108,7 +108,7 @@ export const spellCaster = (spellLogic: Spell = spellBook[0]) => {
 				tick(_, { delta }, actor) {
 					const { mesh, state } = actor;
 					if (state.life <= 1) {
-						api.remove(actor)
+						api.remove(actor);
 						return;
 					}
 

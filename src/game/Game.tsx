@@ -8,10 +8,11 @@ import {
 } from 'three';
 import fp from 'lodash/fp';
 
-import { Colors, Controls, PLANE_Z, SCALE, Tag } from './config';
+import { Controls, PLANE_Z, SCALE, Tag } from './config';
 import { makeContext, TimeStep } from './gameContext';
-import { ContextApi, makeBox, withContext } from './api';
+import { ContextApi, withContext } from './api';
 import CodeWindow from './CodeWindow';
+import * as ai from './ai';
 
 import vertShader from './shaders/test-vert';
 import { Spell, spellBook, spellCaster } from './magic';
@@ -19,46 +20,16 @@ import fragShader from './shaders/test-frag';
 import { axisPastDeadzone } from './inputs/globalContext';
 
 
-const makeOther = (api: ContextApi) => {
-	// Make the other near the player
-	const origin = (api.ctx.bb.player?.mesh?.position ?? new Vector3()).clone()
-		.add(
-			new Vector3().setFromSphericalCoords(Math.random() * 4 + 3, Math.random() * Math.PI * 2, Math.PI/2)
-		);
-
-	api.makeEntity({
-		x: origin.x,
-		y: origin.y,
-		mesh: makeBox(Colors.Red),
-		tags: new Set([Tag.Other]),
-		name: 'some-enemy',
-		tick(ctx, _, { mesh }) {
-			mesh.rotation.x += 0.01;
-			mesh.rotation.y += 0.01;
-
-			// Walk toward cube
-			const speed = 0.01 * SCALE;
-			if (ctx.bb.player && mesh.position.distanceTo(ctx.bb.player.mesh.position) > speed) {
-				const v = ctx.bb.player.mesh.position.clone()
-					.sub(mesh.position)
-					.normalize()
-					.multiplyScalar(speed);
-					mesh.position.add(v);
-			}
-		}
-	});
-};
-
 const otherSpawner = () => {
 	let lastSpawn = Date.now();
 	return (api: ContextApi) => {
 		const { keys } = api.ctx.bb.input.globalInputs;
 		if (keys[Controls.Spawn]?.down && Date.now() - lastSpawn >= 250) {
 			lastSpawn = Date.now();
-			makeOther(api);
+			ai.makeOther(api);
 		}
-	}
-}
+	};
+};
 
 const twinstickCamera = () => (api: ContextApi) => {
 	if (api.ctx.bb.player?.mesh.position) {
@@ -67,10 +38,10 @@ const twinstickCamera = () => (api: ContextApi) => {
 		if (api.ctx.camera.position.distanceTo(target) < 0.1) {
 			api.ctx.camera.position.copy(target);
 		} else {
-			api.ctx.camera.position.lerp(target, 0.1)
+			api.ctx.camera.position.lerp(target, 0.1);
 		}
 	}
-}
+};
 
 const setUpScene = (api: ContextApi) => {
 	// Player stuff
@@ -85,7 +56,9 @@ const setUpScene = (api: ContextApi) => {
 			// Move around
 			const { globalInputs } = ctx.bb.input;
 			const v = new Vector3();
-			const speed = globalInputs.keys[Controls.Boost]?.down ? 0.2 : 0.1;
+
+			// In units / millie
+			const speed = 0.12 * (globalInputs.keys[Controls.Boost]?.down ? 2 : 1);
 			if (globalInputs.keys[Controls.Up]?.down) {
 				v.y++;
 			}
@@ -107,12 +80,15 @@ const setUpScene = (api: ContextApi) => {
 					v.y = -moveY;
 				}
 			}
-			mesh.position.add(v.normalize().multiplyScalar(speed * SCALE * delta));
+			mesh.position.add(v
+				.normalize()
+				.multiplyScalar(speed * SCALE * delta)
+			);
 		}
 	});
 
 	// Toss another in tere
-	makeOther(api);
+	ai.makeOther(api);
 
 	// Blackboard for logic comms
 	api.ctx.bb.player = cube;
@@ -142,7 +118,7 @@ const setUpScene = (api: ContextApi) => {
 	api.ctx.scene.add(targeting);
 
 	return api;
-}
+};
 
 export interface Props {}
 
@@ -180,8 +156,6 @@ class Game extends React.Component<Props, State> {
 		ctx.renderer.setSize(width, height);
 		ctx.camera.position.z = PLANE_Z;
 		this.api = withContext(ctx);
-		this.tickables.push(otherSpawner());
-		this.tickables.push(twinstickCamera());
 
 		this.state = {
 			api: this.api,
@@ -196,8 +170,16 @@ class Game extends React.Component<Props, State> {
 	componentDidMount() {
 		// ---- Mount Init ----- //
 		this.containerRef.current?.appendChild(this.api.ctx.renderer.domElement);
+
 		setUpScene(this.api);
-		this.setSpell(fp.sample(spellBook) ?? spellBook[0]);
+
+		this.tickables.push(otherSpawner());
+		this.tickables.push(ai.spawner({ api: this.api }));
+		this.tickables.push(twinstickCamera());
+
+		this.setSpell(spellBook[0]);
+
+		// Run
 		this.play();
 	}
 
@@ -207,7 +189,8 @@ class Game extends React.Component<Props, State> {
 
 	play() {
 		if (this.state.paused) {
-			this._frameId = window.requestAnimationFrame(() => this.tick());
+			this._time = performance.now();
+			this._frameId = window.requestAnimationFrame((t) => this.tick(t));
 			this.setState({ paused: false });
 		}
 	}
@@ -220,10 +203,14 @@ class Game extends React.Component<Props, State> {
 		}
 	}
 
-	tick() {
+	tick(atTime: number) {
 		if (!this.state.paused) {
-			this._frameId = window.requestAnimationFrame(() => this.tick());
-			const timeStep = { time: this._frameId, delta: 1 };
+			this._frameId = window.requestAnimationFrame((t) => this.tick(t));
+			const timeStep: TimeStep = {
+				time: atTime,
+				delta: atTime - this._time,
+			};
+			this._time = atTime;
 
 			// Transform mouse into game space
 			if (this.api.ctx.bb.input.globalInputs.pointers[1]) {

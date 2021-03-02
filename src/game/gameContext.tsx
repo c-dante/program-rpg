@@ -3,8 +3,8 @@ import type { Renderer, Scene, Camera, Mesh, Intersection } from 'three';
 import { Inputs, globalInputs } from './inputs/globalContext';
 
 export type TimeStep = {
-	time: number,
-	delta: number,
+	time: number, // in performance.now()
+	delta: number, // since last tick time
 }
 
 export type Tick = (ctx: Context, step: TimeStep, self: Actor) => void;
@@ -15,7 +15,7 @@ export interface Named {
 	name: string;
 }
 export interface Tagged {
-	tags: Set<String>;
+	tags: Set<string>;
 }
 
 export interface Actor extends Tickable, Named, Tagged {
@@ -83,4 +83,4 @@ export const makeActor = ({
 		tags,
 		state,
 	};
-}
+};

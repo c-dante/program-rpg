@@ -152,6 +152,6 @@ const DebugInput = () => {
 
 		</div>
 	);
-}
+};
 
 export default DebugInput;

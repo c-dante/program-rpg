@@ -12,7 +12,7 @@ export type Inputs = {
 
 export const AXIS_DEADZONE = 0.15;
 
-export const axisPastDeadzone = (x, y, deadzone = AXIS_DEADZONE) => (x*x + y*y) > deadzone
+export const axisPastDeadzone = (x, y, deadzone = AXIS_DEADZONE) => (x*x + y*y) > deadzone;
 
 const PRESS_WINDOW_MS = 175; // ms to see a "down-up" event as a button press
 
@@ -95,7 +95,7 @@ export const HookInputs = () => {
 	};
 
 
-	_frameId = window.requestAnimationFrame(rafLoop)
+	_frameId = window.requestAnimationFrame(rafLoop);
 	window.addEventListener('keyup', _onKeyUp);
 	window.addEventListener('keydown', _onKeyDown);
 	window.addEventListener('pointerdown', _onPointerDown);

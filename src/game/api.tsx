@@ -1,7 +1,31 @@
 import fp from 'lodash/fp';
 import { BoxGeometry, Mesh, MeshBasicMaterial, Raycaster } from 'three';
-import { Actor, Context, makeActor, Tick } from './gameContext';
-import { Colors, SCALE } from './config';
+import { Actor, Context, makeActor, Tick, TimeStep } from './gameContext';
+import { Colors } from './config';
+
+// I want "into Set" -- gimme something that can get to Set<T>, and Set
+type IntoSet<T> = Set<T> | T[];
+
+// -------- Set/helpers
+// Would use const but <T>() => overlaps w/ tsx
+function setIntersects<T>(a: Set<T>, b: Set<T>): boolean {
+	const [l, r] = fp.sortBy('size', [a, b]);
+	for (const elt of l) {
+		if (r.has(elt)) {
+			return true;
+		}
+	}
+	return false;
+}
+// console.log(setIntersects(
+// 	new Set([1, 2, 3]),
+// 	new Set([2]),
+// ));
+// console.log(setIntersects(
+// 	new Set([1, 2, 3]),
+// 	new Set([5, 6, 7, 8, 9, 10, 11]),
+// ));
+// --------
 
 export const makeBox = (color = Colors.Purple) => new Mesh(
 	new BoxGeometry(),
@@ -29,7 +53,6 @@ export const makeEntity = (
 ): Actor => {
 	mesh.position.x = x;
 	mesh.position.y = y;
-	mesh.scale.multiplyScalar(SCALE);
 	scene.add(mesh);
 
 	const entity = makeActor({
@@ -50,7 +73,7 @@ const disposeMesh = (mesh: Mesh): void => {
 	} else {
 		mesh.material.dispose();
 	}
-}
+};
 
 export const removeByTags = (
 	ctx: Context,
@@ -86,6 +109,15 @@ export const remove = (
 	actor: Actor
 ): void => removeAll(ctx, [actor]);
 
+const getByTags = (ctx: Context, tags: IntoSet<string>): Actor[] => {
+	const tagSet: Set<string> = fp.isArray(tags)
+		? new Set(tags)
+		: tags as Set<string>;
+	return ctx.actors.filter(
+		x => setIntersects(x.tags, tagSet),
+	);
+};
+
 /**
  * Annoyingly mutable object
  * Would love to mark things as mut better
@@ -93,11 +125,14 @@ export const remove = (
 export interface ContextApi {
 	readonly ctx: Context;
 	readonly raycaster: Raycaster;
-	readonly makeEntity: (props: Partial<MakeEntityProps>) => Actor;
-	readonly remove: (actor: Actor) => void;
-	readonly removeAll: (actor: Actor[]) => void;
-	readonly removeByTags: (tags: string[]) => void;
-}
+
+	makeEntity: (props: Partial<MakeEntityProps>) => Actor;
+	remove: (actor: Actor) => void;
+	removeAll: (actor: Actor[]) => void;
+	removeByTags: (tags: string[]) => void;
+	getByTags: (tags: IntoSet<string>) => Actor[];
+};
+
 export const withContext = (ctx: Context): ContextApi => ({
 	ctx,
 	raycaster: new Raycaster(),
@@ -105,4 +140,7 @@ export const withContext = (ctx: Context): ContextApi => ({
 	remove: fp.partial(remove, [ctx]),
 	removeAll: fp.partial(removeAll, [ctx]),
 	removeByTags: fp.partial(removeByTags, [ctx]),
+	getByTags: fp.partial(getByTags, [ctx]),
 });
+
+export type AppTick = (api: ContextApi, step: TimeStep) => void;
