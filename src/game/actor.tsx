@@ -1,6 +1,6 @@
 import fp from 'lodash/fp';
 import type { Renderer, Scene, Camera, Mesh, Intersection } from 'three';
-import { Inputs, globalInputs } from './InputContext';
+import { Inputs, globalInputs } from './inputs/globalContext';
 
 export type TimeStep = {
 	time: number,

@@ -2,7 +2,7 @@ import { BoxGeometry, Mesh, MeshBasicMaterial, Vector3, Spherical } from 'three'
 import { TimeStep } from './actor';
 import { ContextApi } from './api';
 import { SCALE, Colors, Tag } from './config';
-import { axisPastDeadzone } from './InputContext';
+import { axisPastDeadzone } from './inputs/globalContext';
 
 const SpellEnv = {
 	Vector3,

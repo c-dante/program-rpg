@@ -2,8 +2,8 @@ import fp from 'lodash/fp';
 import React from 'react';
 import { Fragment } from 'react';
 import { useRaf } from 'react-use';
-import { XboxButtonMap, XboxButtons } from './game/controllers/xbox';
-import { globalInputs, keyBuffer } from './game/InputContext';
+import { XboxButtonMap, XboxButtons } from './game/inputs/xbox';
+import { globalInputs, keyBuffer } from './game/inputs/globalContext';
 
 const Axis = ({ x, y, radius, innerRadius = radius / 6 }) => (
 	<svg version="1.1" width={radius * 2} height={radius * 2}>

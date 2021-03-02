@@ -16,7 +16,7 @@ import CodeWindow from './CodeWindow';
 import vertShader from './shaders/test-vert';
 import fragShader from './shaders/test-frag';
 import { Spell, spellBook, spellCaster } from './magic';
-import { axisPastDeadzone } from './InputContext';
+import { axisPastDeadzone } from './inputs/globalContext';
 
 
 const makeOther = (api: ContextApi) => {
