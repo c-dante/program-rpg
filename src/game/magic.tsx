@@ -30,7 +30,7 @@ export const compileSpell = (incantation: string) => {
 		source: incantation,
 		fn,
 	};
-}
+};
 
 export const spellBook: Spell[] = [
 	compileSpell(
@@ -108,7 +108,7 @@ export const spellCaster = (spellLogic: Spell = spellBook[0]) => {
 				tick(_, { delta }, actor) {
 					const { mesh, state } = actor;
 					if (state.life <= 1) {
-						api.remove(actor)
+						api.remove(actor);
 						return;
 					}
 

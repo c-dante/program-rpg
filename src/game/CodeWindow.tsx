@@ -33,7 +33,7 @@ class SpellEditor extends React.Component<Props, State> {
 		if (this.containerRef.current) {
 			const _onChange = (cm: CodeMirror) => {
 				this.props.onChange(cm.doc.getValue());
-			}
+			};
 			const _onFocus = () => this.props.onFocus();
 			const _onBlur = () => this.props.onBlur();
 			this.codeMirror = new CodeMirror(this.containerRef.current, {

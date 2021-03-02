@@ -33,4 +33,4 @@ import { TimeStep } from './gameContext';
 
 export const spawner = () => (api: ContextApi, delta: TimeStep) => {
 
-}
+};

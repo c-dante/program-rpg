@@ -24,4 +24,4 @@ export const cameraControls = () => (api: ContextApi, { delta }: TimeStep) => {
 	api.ctx.camera.position.add(
 		v.normalize().multiplyScalar(keys[Controls.CameraBoost]?.down ? 5 : 0.5)
 	);
-}
+};
