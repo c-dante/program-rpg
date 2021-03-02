@@ -1,0 +1,25 @@
+{
+  "files": {
+    "main.css": "/program-rpg/static/css/main.162f7bc1.chunk.css",
+    "main.js": "/program-rpg/static/js/main.dd89279a.chunk.js",
+    "main.js.map": "/program-rpg/static/js/main.dd89279a.chunk.js.map",
+    "runtime-main.js": "/program-rpg/static/js/runtime-main.03c28fb1.js",
+    "runtime-main.js.map": "/program-rpg/static/js/runtime-main.03c28fb1.js.map",
+    "static/css/2.f18cf14f.chunk.css": "/program-rpg/static/css/2.f18cf14f.chunk.css",
+    "static/js/2.d06367d4.chunk.js": "/program-rpg/static/js/2.d06367d4.chunk.js",
+    "static/js/2.d06367d4.chunk.js.map": "/program-rpg/static/js/2.d06367d4.chunk.js.map",
+    "static/js/3.b067ae46.chunk.js": "/program-rpg/static/js/3.b067ae46.chunk.js",
+    "static/js/3.b067ae46.chunk.js.map": "/program-rpg/static/js/3.b067ae46.chunk.js.map",
+    "index.html": "/program-rpg/index.html",
+    "static/css/2.f18cf14f.chunk.css.map": "/program-rpg/static/css/2.f18cf14f.chunk.css.map",
+    "static/css/main.162f7bc1.chunk.css.map": "/program-rpg/static/css/main.162f7bc1.chunk.css.map",
+    "static/js/2.d06367d4.chunk.js.LICENSE.txt": "/program-rpg/static/js/2.d06367d4.chunk.js.LICENSE.txt"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.03c28fb1.js",
+    "static/css/2.f18cf14f.chunk.css",
+    "static/js/2.d06367d4.chunk.js",
+    "static/css/main.162f7bc1.chunk.css",
+    "static/js/main.dd89279a.chunk.js"
+  ]
+}
