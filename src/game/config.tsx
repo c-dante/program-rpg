@@ -27,5 +27,5 @@ export const Tag = {
 	Bullet: 'Bullet',
 };
 
-export const SCALE = 1 / 10; // seconds -> ms
+export const SCALE = 1 / 10;
 export const PLANE_Z = 30;

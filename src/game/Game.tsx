@@ -8,9 +8,9 @@ import {
 } from 'three';
 import fp from 'lodash/fp';
 
-import { Colors, Controls, PLANE_Z, SCALE, Tag } from './config';
+import { Controls, PLANE_Z, SCALE, Tag } from './config';
 import { makeContext, TimeStep } from './gameContext';
-import { ContextApi, makeBox, withContext } from './api';
+import { ContextApi, withContext } from './api';
 import CodeWindow from './CodeWindow';
 import * as ai from './ai';
 
@@ -20,43 +20,13 @@ import fragShader from './shaders/test-frag';
 import { axisPastDeadzone } from './inputs/globalContext';
 
 
-const makeOther = (api: ContextApi) => {
-	// Make the other near the player
-	const origin = (api.ctx.bb.player?.mesh?.position ?? new Vector3()).clone()
-		.add(
-			new Vector3().setFromSphericalCoords(Math.random() * 4 + 3, Math.random() * Math.PI * 2, Math.PI/2)
-		);
-
-	api.makeEntity({
-		x: origin.x,
-		y: origin.y,
-		mesh: makeBox(Colors.Red),
-		tags: new Set([Tag.Other]),
-		name: 'some-enemy',
-		tick(ctx, _, { mesh }) {
-			mesh.rotation.x += 0.01;
-			mesh.rotation.y += 0.01;
-
-			// Walk toward cube
-			const speed = 0.1 * SCALE;
-			if (ctx.bb.player && mesh.position.distanceTo(ctx.bb.player.mesh.position) > speed) {
-				const v = ctx.bb.player.mesh.position.clone()
-					.sub(mesh.position)
-					.normalize()
-					.multiplyScalar(speed);
-					mesh.position.add(v);
-			}
-		}
-	});
-};
-
 const otherSpawner = () => {
 	let lastSpawn = Date.now();
 	return (api: ContextApi) => {
 		const { keys } = api.ctx.bb.input.globalInputs;
 		if (keys[Controls.Spawn]?.down && Date.now() - lastSpawn >= 250) {
 			lastSpawn = Date.now();
-			makeOther(api);
+			ai.makeOther(api);
 		}
 	};
 };
@@ -118,7 +88,7 @@ const setUpScene = (api: ContextApi) => {
 	});
 
 	// Toss another in tere
-	makeOther(api);
+	ai.makeOther(api);
 
 	// Blackboard for logic comms
 	api.ctx.bb.player = cube;
@@ -186,9 +156,6 @@ class Game extends React.Component<Props, State> {
 		ctx.renderer.setSize(width, height);
 		ctx.camera.position.z = PLANE_Z;
 		this.api = withContext(ctx);
-		this.tickables.push(otherSpawner());
-		this.tickables.push(ai.spawner());
-		this.tickables.push(twinstickCamera());
 
 		this.state = {
 			api: this.api,
@@ -203,8 +170,16 @@ class Game extends React.Component<Props, State> {
 	componentDidMount() {
 		// ---- Mount Init ----- //
 		this.containerRef.current?.appendChild(this.api.ctx.renderer.domElement);
+
 		setUpScene(this.api);
-		this.setSpell(fp.sample(spellBook) ?? spellBook[0]);
+
+		this.tickables.push(otherSpawner());
+		this.tickables.push(ai.spawner({ api: this.api }));
+		this.tickables.push(twinstickCamera());
+
+		this.setSpell(spellBook[0]);
+
+		// Run
 		this.play();
 	}
 
